@@ -8,6 +8,14 @@ import numpy as np
 from retarget_motion import retarget_core
 
 
+def _has_pybullet():
+  try:
+    importlib.import_module("pybullet")
+    return True
+  except ImportError:
+    return False
+
+
 class RetargetCoreTest(unittest.TestCase):
 
   def setUp(self):
@@ -29,6 +37,15 @@ class RetargetCoreTest(unittest.TestCase):
       with self.assertRaises(ImportError):
         retarget_core.retarget_joint_data("a1", joint_pos_data, gui=False)
 
+  def test_retarget_motion_frames_requires_pybullet(self):
+    config = retarget_core.load_robot_config("a1")
+    joint_pos_data = retarget_core.load_ref_data(str(self.fixture_path), 0, 2)
+    with mock.patch.object(retarget_core, "_load_pybullet", return_value=(None, None)):
+      with self.assertRaises(ImportError):
+        retarget_core.retarget_motion_frames(
+            robot=object(), config=config, joint_pos_data=joint_pos_data)
+
+  @unittest.skipUnless(_has_pybullet(), "pybullet is not available in this interpreter")
   def test_retarget_joint_data_returns_non_default_19d_pose_for_a1(self):
     config = retarget_core.load_robot_config("a1")
     joint_pos_data = retarget_core.load_ref_data(

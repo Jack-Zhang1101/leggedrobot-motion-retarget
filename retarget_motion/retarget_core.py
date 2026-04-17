@@ -298,7 +298,7 @@ def retarget_motion_frames(robot, config, joint_pos_data, pybullet=None):
   if pybullet is None:
     pybullet, _ = _load_pybullet()
   if pybullet is None:
-    return _retarget_motion_frames_fallback(config, joint_pos_data)
+    raise ImportError("pybullet is required for retarget_motion_frames()")
 
   num_frames = joint_pos_data.shape[0]
   for f in range(num_frames):
