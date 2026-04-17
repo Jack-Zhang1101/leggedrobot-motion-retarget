@@ -1,8 +1,9 @@
 import numpy as np
 from motion_imitation.utilities import pose3d
+from motion_imitation.utilities import asset_utils
 from pybullet_utils  import transformations
 
-URDF_FILENAME = "laikago/laikago_toes.urdf"
+URDF_FILENAME = asset_utils.resolve_repo_asset_path("laikago/laikago_toes.urdf")
 
 REF_POS_SCALE = 1
 INIT_POS = np.array([0, 0, 0])
