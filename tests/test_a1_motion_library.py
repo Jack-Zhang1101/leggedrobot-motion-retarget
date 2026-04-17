@@ -1,9 +1,14 @@
+import importlib
 import unittest
 
 from retarget_motion import retarget_core
 
 
 class RetargetCoreTest(unittest.TestCase):
+
+  def test_retarget_motion_module_imports(self):
+    module = importlib.import_module("retarget_motion.retarget_motion")
+    self.assertIs(module.retarget_core, retarget_core)
 
   def test_load_robot_config_a1(self):
     config = retarget_core.load_robot_config("a1")
