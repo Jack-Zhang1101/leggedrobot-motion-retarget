@@ -15,11 +15,9 @@ import time
 import tensorflow as tf
 import numpy as np
 
-from motion_imitation.utilities import pose3d
-from pybullet_utils import transformations
 import pybullet
 import pybullet_data as pd
-from motion_imitation.utilities import motion_util
+from retarget_motion import retarget_core
 
 # import retarget_config_a1 as config
 import retarget_config_laikago as config
@@ -154,17 +152,7 @@ def set_maker_pos(marker_pos, marker_ids):
   return
 
 def process_ref_joint_pos_data(joint_pos):
-  proc_pos = joint_pos.copy()
-  num_pos = joint_pos.shape[0]
-
-  for i in range(num_pos):
-    curr_pos = proc_pos[i]
-    curr_pos = pose3d.QuaternionRotatePoint(curr_pos, REF_COORD_ROT)
-    curr_pos = pose3d.QuaternionRotatePoint(curr_pos, REF_ROOT_ROT)
-    curr_pos = curr_pos * config.REF_POS_SCALE + REF_POS_OFFSET
-    proc_pos[i] = curr_pos
-
-  return proc_pos
+  return retarget_core.process_ref_joint_pos_data(joint_pos, config)
 
 def retarget_root_pose(ref_joint_pos):
   pelvis_pos = ref_joint_pos[REF_PELVIS_JOINT_ID]
@@ -267,57 +255,10 @@ def load_ref_data(JOINT_POS_FILENAME, FRAME_START, FRAME_END):
   return joint_pos_data
 
 def retarget_motion(robot, joint_pos_data):
-  num_frames = joint_pos_data.shape[0]
-
-  for f in range(num_frames):
-    ref_joint_pos = joint_pos_data[f]
-    ref_joint_pos = np.reshape(ref_joint_pos, [-1, POS_SIZE])
-    ref_joint_pos = process_ref_joint_pos_data(ref_joint_pos)
-
-    curr_pose = retarget_pose(robot, config.DEFAULT_JOINT_POSE, ref_joint_pos)
-    set_pose(robot, curr_pose)
-
-    if f == 0:
-      pose_size = curr_pose.shape[-1]
-      new_frames = np.zeros([num_frames, pose_size])
-
-    new_frames[f] = curr_pose
-
-  new_frames[:, 0:2] -= new_frames[0, 0:2]
-
-  return new_frames
+  return retarget_core.retarget_motion_frames(robot, config, joint_pos_data, pybullet=pybullet)
 
 def output_motion(frames, out_filename):
-  with open(out_filename, "w") as f:
-    f.write("{\n")
-    f.write("\"LoopMode\": \"Wrap\",\n")
-    f.write("\"FrameDuration\": " + str(FRAME_DURATION) + ",\n")
-    f.write("\"EnableCycleOffsetPosition\": true,\n")
-    f.write("\"EnableCycleOffsetRotation\": true,\n")
-    f.write("\n")
-
-    f.write("\"Frames\":\n")
-
-    f.write("[")
-    for i in range(frames.shape[0]):
-      curr_frame = frames[i]
-
-      if i != 0:
-        f.write(",")
-      f.write("\n  [")
-
-      for j in range(frames.shape[1]):
-        curr_val = curr_frame[j]
-        if j != 0:
-          f.write(", ")
-        f.write("%.5f" % curr_val)
-
-      f.write("]")
-
-    f.write("\n]")
-    f.write("\n}")
-
-  return
+  return retarget_core.write_motion_file(frames, out_filename)
 
 def main(argv):
   
@@ -343,13 +284,13 @@ def main(argv):
 
       p.removeAllUserDebugItems()
       print("mocap_name=", mocap_motion[0])
-      joint_pos_data = load_ref_data(mocap_motion[1],mocap_motion[2],mocap_motion[3])
+      joint_pos_data = retarget_core.load_ref_data(mocap_motion[1], mocap_motion[2], mocap_motion[3])
     
       num_markers = joint_pos_data.shape[-1] // POS_SIZE
       marker_ids = build_markers(num_markers)
     
-      retarget_frames = retarget_motion(robot, joint_pos_data)
-      output_motion(retarget_frames, f"{mocap_motion[0]}.txt")
+      retarget_frames = retarget_core.retarget_joint_data("laikago", joint_pos_data, gui=True)
+      retarget_core.write_motion_file(retarget_frames, f"{mocap_motion[0]}.txt")
     
       f = 0
       num_frames = joint_pos_data.shape[0]
@@ -390,4 +331,3 @@ def main(argv):
 
 if __name__ == "__main__":
   tf.app.run(main)
-
