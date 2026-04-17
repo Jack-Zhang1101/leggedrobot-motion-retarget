@@ -4,11 +4,17 @@ from pathlib import Path
 
 import numpy as np
 
+from motion_imitation.robots import a1 as a1_robot
 from motion_imitation.utilities import motion_data
 from retarget_motion import retarget_core
 
 
 IDENTITY_ROTATION = np.array([0.0, 0.0, 0.0, 1.0], dtype=np.float64)
+A1_TARGET_TO_JOINT_ORDER = [0, 2, 1, 3]
+A1_HIP_SIGNS = [-1, 1, -1, 1]
+A1_UPPER_LEG_LENGTH = 0.2
+A1_LOWER_LEG_LENGTH = 0.2
+A1_HIP_LINK_LENGTH = 0.08505
 
 
 def _require_pybullet():
@@ -186,6 +192,80 @@ def _solve_target_joint_pose(pybullet, robot, config, target_world_toe_positions
   return np.array(joint_pose, dtype=np.float64)
 
 
+def _project_a1_foot_position_to_knee_limits(foot_position_in_hip, knee_low, knee_high):
+  foot_position_in_hip = np.asarray(foot_position_in_hip, dtype=np.float64)
+  radius_sq = float(np.dot(foot_position_in_hip, foot_position_in_hip))
+  if radius_sq <= 0.0:
+    return foot_position_in_hip
+
+  min_radius_sq = (
+      A1_HIP_LINK_LENGTH**2 + A1_UPPER_LEG_LENGTH**2 + A1_LOWER_LEG_LENGTH**2 +
+      2.0 * A1_UPPER_LEG_LENGTH * A1_LOWER_LEG_LENGTH * np.cos(knee_low))
+  max_radius_sq = (
+      A1_HIP_LINK_LENGTH**2 + A1_UPPER_LEG_LENGTH**2 + A1_LOWER_LEG_LENGTH**2 +
+      2.0 * A1_UPPER_LEG_LENGTH * A1_LOWER_LEG_LENGTH * np.cos(knee_high))
+  clipped_radius_sq = float(np.clip(radius_sq, min_radius_sq, max_radius_sq))
+  if np.isclose(clipped_radius_sq, radius_sq):
+    return foot_position_in_hip
+
+  scale = np.sqrt(clipped_radius_sq / radius_sq)
+  return foot_position_in_hip * scale
+
+
+def _solve_a1_leg_joint_pose(foot_position_in_hip, l_hip_sign, joint_low, joint_high):
+  foot_position_in_hip = _project_a1_foot_position_to_knee_limits(
+      foot_position_in_hip, knee_low=joint_low[2], knee_high=joint_high[2])
+
+  l_up = A1_UPPER_LEG_LENGTH
+  l_low = A1_LOWER_LEG_LENGTH
+  l_hip = A1_HIP_LINK_LENGTH * l_hip_sign
+  x, y, z = foot_position_in_hip
+
+  cos_knee = (
+      x**2 + y**2 + z**2 - l_hip**2 - l_low**2 - l_up**2) / (2.0 * l_low * l_up)
+  cos_knee = float(np.clip(cos_knee, -1.0, 1.0))
+  theta_knee = -np.arccos(cos_knee)
+
+  leg_length = np.sqrt(l_up**2 + l_low**2 + 2.0 * l_up * l_low * np.cos(theta_knee))
+  sin_hip = float(np.clip(-x / leg_length, -1.0, 1.0))
+  theta_hip = np.arcsin(sin_hip) - theta_knee / 2.0
+  c1 = l_hip * y - leg_length * np.cos(theta_hip + theta_knee / 2.0) * z
+  s1 = leg_length * np.cos(theta_hip + theta_knee / 2.0) * y + l_hip * z
+  theta_ab = np.arctan2(s1, c1)
+
+  return np.clip(
+      np.array([theta_ab, theta_hip, theta_knee], dtype=np.float64),
+      np.asarray(joint_low, dtype=np.float64),
+      np.asarray(joint_high, dtype=np.float64))
+
+
+def _solve_a1_joint_pose(base_pos,
+                         base_rot,
+                         target_world_toe_positions,
+                         joint_low,
+                         joint_high,
+                         pybullet):
+  target_local_toes = _world_positions_to_base_frame(
+      pybullet, base_pos, base_rot, target_world_toe_positions)
+  target_local_toes = [
+      np.asarray(target_local_toes[idx], dtype=np.float64)
+      for idx in A1_TARGET_TO_JOINT_ORDER
+  ]
+
+  joint_pose = []
+  for leg_idx, target_local_toe in enumerate(target_local_toes):
+    foot_position_in_hip = target_local_toe - np.asarray(
+        a1_robot.HIP_OFFSETS[leg_idx], dtype=np.float64)
+    leg_joint_pose = _solve_a1_leg_joint_pose(
+        foot_position_in_hip,
+        l_hip_sign=A1_HIP_SIGNS[leg_idx],
+        joint_low=joint_low[leg_idx],
+        joint_high=joint_high[leg_idx])
+    joint_pose.append(np.asarray(leg_joint_pose, dtype=np.float64))
+
+  return np.concatenate(joint_pose, axis=0)
+
+
 def adapt_motion_to_a1(source_motion):
   if not isinstance(source_motion, motion_data.MotionData):
     raise TypeError("source_motion must be a MotionData instance")
@@ -208,6 +288,9 @@ def adapt_motion_to_a1(source_motion):
     first_source_frame = np.array(source_motion.get_frame(0), dtype=np.float64, copy=True)
     source_root_z0 = first_source_frame[2]
     target_root_z0 = float(target_config.INIT_POS[2])
+    target_joint_low, target_joint_high = retarget_core.get_joint_limits(pybullet, target_robot)
+    target_joint_low = np.asarray(target_joint_low, dtype=np.float64).reshape(4, 3)
+    target_joint_high = np.asarray(target_joint_high, dtype=np.float64).reshape(4, 3)
 
     frames = []
     for frame_id in range(source_motion.get_num_frames()):
@@ -237,8 +320,13 @@ def adapt_motion_to_a1(source_motion):
       target_world_hips = _get_link_world_positions(
           pybullet, target_robot, target_config.SIM_HIP_JOINT_IDS)
       target_world_toes = _apply_hip_toe_deltas(target_world_hips, source_hip_toe_deltas)
-      target_joint_pose = _solve_target_joint_pose(
-          pybullet, target_robot, target_config, target_world_toes)
+      target_joint_pose = _solve_a1_joint_pose(
+          target_root_pos,
+          target_root_rot,
+          target_world_toes,
+          target_joint_low,
+          target_joint_high,
+          pybullet)
       target_frame = np.concatenate([target_root_pos, target_root_rot, target_joint_pose])
       frames.append(target_frame)
 

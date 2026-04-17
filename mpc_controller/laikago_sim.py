@@ -1,7 +1,8 @@
 import re
 import numpy as np
+from motion_imitation.utilities import asset_utils
 
-URDF_NAME = "laikago/laikago_toes_zup.urdf"
+URDF_NAME = asset_utils.resolve_repo_asset_path("assets/robots/laikago/laikago_toes_zup.urdf")
 START_POS = [0, 0, 0.48]
 
 MPC_BODY_MASS = 215/9.8

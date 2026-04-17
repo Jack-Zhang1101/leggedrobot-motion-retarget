@@ -34,6 +34,7 @@ from motion_imitation.robots import a1_robot_velocity_estimator
 from motion_imitation.robots import minitaur
 from motion_imitation.robots import robot_config
 from motion_imitation.envs import locomotion_gym_config
+from motion_imitation.utilities import asset_utils
 from robot_interface import RobotInterface  # pytype: disable=import-error
 
 NUM_MOTORS = 12
@@ -94,7 +95,7 @@ LOWER_NAME_PATTERN = re.compile(r"\w+_lower_\w+")
 TOE_NAME_PATTERN = re.compile(r"\w+_toe\d*")
 IMU_NAME_PATTERN = re.compile(r"imu\d*")
 
-URDF_FILENAME = "a1/a1.urdf"
+URDF_FILENAME = asset_utils.resolve_repo_asset_path("assets/robots/a1/urdf/a1.urdf")
 
 _BODY_B_FIELD_NUMBER = 2
 _LINK_A_FIELD_NUMBER = 3

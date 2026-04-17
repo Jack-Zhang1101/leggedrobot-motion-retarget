@@ -1,7 +1,8 @@
 import re
 import numpy as np
+from motion_imitation.utilities import asset_utils
 
-URDF_NAME = "a1/a1.urdf"
+URDF_NAME = asset_utils.resolve_repo_asset_path("assets/robots/a1/urdf/a1.urdf")
 START_POS = [0, 0, 0.32]
 
 

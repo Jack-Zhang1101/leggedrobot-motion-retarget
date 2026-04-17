@@ -1,4 +1,28 @@
 {
+  "dog_backwards_pace": {
+    "joint_pos_path": null,
+    "metadata_motion_path": "/data-ssd/zhang/LeggedRobot/motion_imitation/motion_imitation/data/motions/dog_backwards_pace.txt",
+    "mode": "derived",
+    "output_path": "motion_imitation/data/motions_a1/dog_backwards_pace.txt",
+    "source_motion": "dog_pace",
+    "source_motion_path": null
+  },
+  "dog_backwards_trot": {
+    "joint_pos_path": null,
+    "metadata_motion_path": "/data-ssd/zhang/LeggedRobot/motion_imitation/motion_imitation/data/motions/dog_backwards_trot.txt",
+    "mode": "derived",
+    "output_path": "motion_imitation/data/motions_a1/dog_backwards_trot.txt",
+    "source_motion": "dog_trot",
+    "source_motion_path": null
+  },
+  "dog_pace": {
+    "joint_pos_path": "/data-ssd/zhang/LeggedRobot/motion_imitation/retarget_motion/data/dog_pace_joint_pos.txt",
+    "metadata_motion_path": "/data-ssd/zhang/LeggedRobot/motion_imitation/motion_imitation/data/motions/dog_pace.txt",
+    "mode": "raw",
+    "output_path": "motion_imitation/data/motions_a1/dog_pace.txt",
+    "source_motion": null,
+    "source_motion_path": null
+  },
   "dog_spin": {
     "joint_pos_path": null,
     "metadata_motion_path": "/data-ssd/zhang/LeggedRobot/motion_imitation/motion_imitation/data/motions/dog_spin.txt",
@@ -6,6 +30,14 @@
     "output_path": "motion_imitation/data/motions_a1/dog_spin.txt",
     "source_motion": null,
     "source_motion_path": "/data-ssd/zhang/LeggedRobot/motion_imitation/motion_imitation/data/motions/dog_spin.txt"
+  },
+  "dog_trot": {
+    "joint_pos_path": "/data-ssd/zhang/LeggedRobot/motion_imitation/retarget_motion/data/dog_trot_joint_pos.txt",
+    "metadata_motion_path": "/data-ssd/zhang/LeggedRobot/motion_imitation/motion_imitation/data/motions/dog_trot.txt",
+    "mode": "raw",
+    "output_path": "motion_imitation/data/motions_a1/dog_trot.txt",
+    "source_motion": null,
+    "source_motion_path": null
   },
   "hopturn": {
     "joint_pos_path": null,

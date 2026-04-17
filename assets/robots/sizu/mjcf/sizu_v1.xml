@@ -1,0 +1,389 @@
+<mujoco model="sizu_v1">
+  <compiler angle="radian" eulerseq="zyx"/>
+    <option timestep='0.001' iterations='50' solver='PGS' gravity='0 0 -9.81'>
+    <!-- <flag sensornoise="enable" frictionloss="enable"/> -->
+    </option>
+    <size njmax="500" nconmax="100" />
+
+    <visual>
+        <quality shadowsize='4096'/>
+        <map znear='0.05'/>
+    </visual>
+
+    <default>
+        <joint limited='true'/>
+        <motor ctrllimited='true'/>
+        <geom  condim='4' contype="1" conaffinity="15" solref='0.001 2' friction='0.9 0.2 0.2'/>
+        <equality solref='0.001 2'/>
+    </default>
+
+  <asset>
+
+    <material name="black" rgba="0.0 0.0 0.0 1.0" />
+
+    <mesh name="base_link" file="../meshes/base_link.STL" />
+    <mesh name="left1_1_link" file="../meshes/left1_1_link.STL" />
+    <mesh name="left1_2_link" file="../meshes/left1_2_link.STL" />
+    <mesh name="left1_3_link" file="../meshes/left1_3_link.STL" />
+    <mesh name="left2_1_link" file="../meshes/left2_1_link.STL" />
+    <mesh name="left2_2_link" file="../meshes/left2_2_link.STL" />
+    <mesh name="left2_3_link" file="../meshes/left2_3_link.STL" />
+    <mesh name="right1_1_link" file="../meshes/right1_1_link.STL" />
+    <mesh name="right1_2_link" file="../meshes/right1_2_link.STL" />
+    <mesh name="right1_3_link" file="../meshes/right1_3_link.STL" />
+    <mesh name="right2_1_link" file="../meshes/right2_1_link.STL" />
+    <mesh name="right2_2_link" file="../meshes/right2_2_link.STL" />
+    <mesh name="right2_3_link" file="../meshes/right2_3_link.STL" />
+
+    <!-- <hfield name='hf0' nrow='200' ncol='200' size="10 5 0.2 .1"/> -->
+  </asset>
+  <worldbody>
+
+    <!-- <light directional="true" diffuse=".4 .4 .4" specular="0.1 0.1 0.1" pos="0 0 5.0" dir="0 0 -1" castshadow="false"/>
+    <light directional="true" diffuse=".6 .6 .6" specular="0.2 0.2 0.2" pos="0 0 4" dir="0 0 -1"/>
+    <geom name="ground" type="plane" size="0 0 1" pos="0.001 0 0" quat="1 0 0 0" material="matplane2" condim="1" conaffinity='15' friction="2 0.1 2"/> -->
+
+    <body name="base_link" pos="0.00000000 0.00000000 0.28300000" quat="1 0 0 0">
+      <inertial pos="-0.0069471 3.3806e-06 0.045197" quat="0.707084 0.707083 0.00573386 -0.00573384" mass="8.4217" diaginertia="0.09190 0.31958 0.37063" />
+      <joint name="floating_base_joint" type="free" limited="true" />
+      <site name='imu' size='0.01' pos='0.0 0 0.0'/> 
+
+      <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.84706 0.84706 0.84706 1" mesh="base_link" />
+      <geom type="mesh" rgba="0.84706 0.84706 0.84706 1" mesh="base_link" />
+      
+      <body name="left1_1_link" pos="0.18256 0.087 0.062" quat="1.0 0.0 0.0 0.0">
+        <inertial pos="0.050832 -0.011343 -0.0001722" quat="1.0 0.0 0.0 0.0" mass="1.83277" diaginertia="0.00247 0.00456 0.00331" />
+        <joint name="left1_1_joint" pos="0 0 0" axis="1 0 0" range="-0.873 0.873" />
+        <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.89804 0.91765 0.92941 1" mesh="left1_1_link" />
+        <geom type="mesh" rgba="0.89804 0.91765 0.92941 1" mesh="left1_1_link" />
+        <body name="left1_2_link" pos="0.0785000000000005 0.0105000000000026 0" quat="1.0 0.0 0.0 0.0">
+          <inertial pos="-0.011397 0.071514 -0.085657" quat="1.0 0.0 0.0 0.0" mass="2.57652" diaginertia="0.02289 0.02373 0.00451" />
+          <joint name="left1_2_joint" pos="0 0 0" axis="0 1 0" range="-0.516 2.478" />
+          <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.89804 0.91765 0.92941 1" mesh="left1_2_link" />
+          <geom type="mesh" rgba="0.89804 0.91765 0.92941 1" mesh="left1_2_link" />
+          <body name="left1_3_link" pos="0 0.109000000000004 -0.274999999999999" quat="1.0 0.0 0.0 0.0">
+            <inertial pos="0.13302 -0.021113 0.0026327" quat="1.0 0.0 0.0 0.0" mass="0.45786" diaginertia="0.00021 0.00629 0.00615" />
+            <joint name="left1_3_joint" pos="0 0 0" axis="0 1 0" range="-1.241 1.143" />
+            <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.89804 0.91765 0.92941 1" mesh="left1_3_link" />
+            <geom type="mesh" rgba="0.89804 0.91765 0.92941 1" mesh="left1_3_link" />
+            <body name="left1_foot" pos="0.28 -0.02 0.0" quat="1.0 0.0 0.0 0.0">
+              <inertial pos="0 0 0" mass="0.06" diaginertia="9.6e-06 9.6e-06 9.6e-06" />
+              <geom type="sphere" size="0.04" contype="1" conaffinity="15" />
+              <geom type="sphere" size="0.01" material="black" contype="0" conaffinity="0" />
+            </body>
+          </body>
+        </body>
+      </body>
+      
+
+      
+      <body name="left2_1_link" pos="-0.22344 0.087 0.062" quat="1.0 0.0 0.0 0.0">
+        <inertial pos="-0.050908 -0.01109 0.00020244" quat="1.0 0.0 0.0 0.0" mass="1.83916" diaginertia="0.00248 0.00457 0.00332" />
+        <joint name="left2_1_joint" pos="0 0 0" axis="1 0 0" range="-0.873 0.873" />
+        <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.89804 0.91765 0.92941 1" mesh="left2_1_link" />
+        <geom type="mesh" rgba="0.89804 0.91765 0.92941 1" mesh="left2_1_link" />
+        <body name="left2_2_link" pos="-0.0784999999999971 0.0105000000000021 0" quat="1.0 0.0 0.0 0.0">
+          <inertial pos="-0.01131 0.071514 -0.085934" quat="1.0 0.0 0.0 0.0" mass="2.57652" diaginertia="0.0226 0.0235 0.00448" />
+          <joint name="left2_2_joint" pos="0 0 0" axis="0 1 0" range="-0.516 2.478" />
+          <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.89804 0.91765 0.92941 1" mesh="left2_2_link" />
+          <geom type="mesh" rgba="0.89804 0.91765 0.92941 1" mesh="left2_2_link" />
+          <body name="left2_3_link" pos="0 0.109000000000013 -0.275" quat="1.0 0.0 0.0 0.0">
+            <inertial pos="0.13302 -0.021113 0.0026327" quat="1.0 0.0 0.0 0.0" mass="0.45786" diaginertia="0.00019 0.00629 0.00617" />
+            <joint name="left2_3_joint" pos="0 0 0" axis="0 1 0" range="-1.241 1.143" />
+            <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.89804 0.91765 0.92941 1" mesh="left2_3_link" />
+            <geom type="mesh" rgba="0.89804 0.91765 0.92941 1" mesh="left2_3_link" />
+            <body name="left2_foot" pos="0.28 -0.02 0.0" quat="1.0 0.0 0.0 0.0">
+              <inertial pos="0 0 0" mass="0.06" diaginertia="9.6e-06 9.6e-06 9.6e-06" />
+              <geom type="sphere" size="0.04" contype="1" conaffinity="15" />
+              <geom type="sphere" size="0.01" material="black" contype="0" conaffinity="0" />
+            </body>
+          </body>
+        </body>
+      </body>
+
+
+      <body name="right1_1_link" pos="0.18256 -0.087 0.062" quat="1.0 0.0 0.0 0.0">
+        <inertial pos="0.050823 0.011343 -0.00016782" quat="1.0 0.0 0.0 0.0" mass="1.83278" diaginertia="0.00247 0.00456 0.00331" />
+        <joint name="right1_1_joint" pos="0 0 0" axis="1 0 0" range="-0.873 0.873" />
+        <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.89804 0.91765 0.92941 1" mesh="right1_1_link" />
+        <geom type="mesh" rgba="0.89804 0.91765 0.92941 1" mesh="right1_1_link" />
+        <body name="right1_2_link" pos="0.0784999999999972 -0.0104999999999987 0" quat="1.0 0.0 0.0 0.0">
+          <inertial pos="-0.011208 -0.071586 -0.085463" quat="1.0 0.0 0.0 0.0" mass="2.57648" diaginertia="0.02289 0.02372 0.0045" />
+          <joint name="right1_2_joint" pos="0 0 0" axis="0 1 0" range="-0.516 2.478" />
+          <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.89804 0.91765 0.92941 1" mesh="right1_2_link" />
+          <geom type="mesh" rgba="0.89804 0.91765 0.92941 1" mesh="right1_2_link" />
+          <body name="right1_3_link" pos="0 -0.109000000000009 -0.274999999999998" quat="0.9999999928174579 0.0 0.0 0.00011985442913135933">
+            <inertial pos="0.13302 0.021112 0.0026328" quat="1.0 0.0 0.0 0.0" mass="0.45786" diaginertia="0.00021 0.00629 0.00615" />
+            <joint name="right1_3_joint" pos="0 0 0" axis="0.000239708856540489 0.999999971269832 0" range="-1.241 1.143" />
+            <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.89804 0.91765 0.92941 1" mesh="right1_3_link" />
+            <geom type="mesh" rgba="0.89804 0.91765 0.92941 1" mesh="right1_3_link" />
+            <body name="right1_foot" pos="0.28 0.02 0.0" quat="1.0 0.0 0.0 0.0">
+              <inertial pos="0 0 0" mass="0.06" diaginertia="9.6e-06 9.6e-06 9.6e-06" />
+              <geom type="sphere" size="0.04" contype="1" conaffinity="15" />
+              <geom type="sphere" size="0.01" material="black" contype="0" conaffinity="0" />
+            </body>
+          </body>
+        </body>
+      </body>
+      
+      <body name="right2_1_link" pos="-0.223442163425559 -0.0869999999999991 0.0620000000000039" quat="1.0 0.0 0.0 0.0">
+        <inertial pos="0 0 0" quat="1.0 0.0 0.0 0.0" mass="1.83916" diaginertia="0.00253 0.00455 0.00325" />
+        <joint name="right2_1_joint" pos="0 0 0" axis="1 0 0" range="-0.873 0.873" />
+        <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.89804 0.91765 0.92941 1" mesh="right2_1_link" />
+        <geom type="mesh" rgba="0.89804 0.91765 0.92941 1" mesh="right2_1_link" />
+        <body name="right2_2_link" pos="-0.0784999999999965 -0.0104999999999997 0" quat="1.0 0.0 0.0 0.0">
+          <inertial pos="-0.011122 -0.071594 -0.085739" quat="1.0 0.0 0.0 0.0" mass="2.57648" diaginertia="0.02269 0.02349 0.00447" />
+          <joint name="right2_2_joint" pos="0 0 0" axis="0 1 0" range="-0.516 2.478" />
+          <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.89804 0.91765 0.92941 1" mesh="right2_2_link" />
+          <geom type="mesh" rgba="0.89804 0.91765 0.92941 1" mesh="right2_2_link" />
+          <body name="right2_3_link" pos="0 -0.109 -0.275000000000001" quat="0.9999999928174579 0.0 0.0 0.00011985442913165084">
+            <inertial pos="0.13302 0.021112 0.0026328" quat="1.0 0.0 0.0 0.0" mass="0.45786" diaginertia="0.00019 0.00629 0.00617" />
+            <joint name="right2_3_joint" pos="0 0 0" axis="0.000239708856541268 0.999999971269832 0" range="-1.241 1.143" />
+            <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.89804 0.91765 0.92941 1" mesh="right2_3_link" />
+            <geom type="mesh" rgba="0.89804 0.91765 0.92941 1" mesh="right2_3_link" />
+            <body name="right2_foot" pos="0.28 0.02 0.0" quat="1.0 0.0 0.0 0.0">
+              <inertial pos="0 0 0" mass="0.06" diaginertia="9.6e-06 9.6e-06 9.6e-06" />
+              <geom type="sphere" size="0.04" contype="1" conaffinity="15" />
+              <geom type="sphere" size="0.01" material="black" contype="0" conaffinity="0" />
+            </body>
+          </body>
+        </body>
+      </body>
+      
+      <site name="base_link_site" pos="0 0 0" quat="1 0 0 0" />
+      <camera name="front_camera" mode="track" fovy="90.0" quat="4.329780281177467e-17 4.329780281177466e-17 0.7071067811865475 0.7071067811865476" pos="0.0 2.0 0.5" />
+      <camera name="side_camera" mode="track" fovy="90.0" quat="-0.5 -0.4999999999999999 0.5 0.5000000000000001" pos="-2.0 0.0 0.5" />
+    </body>
+  </worldbody>
+
+  <actuator>
+    <motor name="left1_1_joint" joint="left1_1_joint" gear="1" ctrllimited="true" ctrlrange="-200 200"/>
+    <motor name="left1_2_joint" joint="left1_2_joint" gear="1" ctrllimited="true" ctrlrange="-200 200"/>
+    <motor name="left1_3_joint" joint="left1_3_joint" gear="1" ctrllimited="true" ctrlrange="-200 200"/>
+    <motor name="left2_1_joint" joint="left2_1_joint" gear="1" ctrllimited="true" ctrlrange="-200 200"/>
+    <motor name="left2_2_joint" joint="left2_2_joint" gear="1" ctrllimited="true" ctrlrange="-200 200"/>
+    <motor name="left2_3_joint" joint="left2_3_joint" gear="1" ctrllimited="true" ctrlrange="-200 200"/>
+    <motor name="right1_1_joint" joint="right1_1_joint" gear="1" ctrllimited="true" ctrlrange="-200 200"/>
+    <motor name="right1_2_joint" joint="right1_2_joint" gear="1" ctrllimited="true" ctrlrange="-200 200"/>
+    <motor name="right1_3_joint" joint="right1_3_joint" gear="1" ctrllimited="true" ctrlrange="-200 200"/>
+    <motor name="right2_1_joint" joint="right2_1_joint" gear="1" ctrllimited="true" ctrlrange="-200 200"/>
+    <motor name="right2_2_joint" joint="right2_2_joint" gear="1" ctrllimited="true" ctrlrange="-200 200"/>
+    <motor name="right2_3_joint" joint="right2_3_joint" gear="1" ctrllimited="true" ctrlrange="-200 200"/>
+  </actuator>
+
+  <contact>
+    <!-- 关闭所有自碰撞，只保留足底和base与地面的碰撞 -->
+    <!-- 排除base_link与所有腿部链接的碰撞 -->
+    <exclude body1="base_link" body2="left1_1_link" />
+    <exclude body1="base_link" body2="left1_2_link" />
+    <exclude body1="base_link" body2="left1_3_link" />
+    <exclude body1="base_link" body2="left2_1_link" />
+    <exclude body1="base_link" body2="left2_2_link" />
+    <exclude body1="base_link" body2="left2_3_link" />
+    <exclude body1="base_link" body2="right1_1_link" />
+    <exclude body1="base_link" body2="right1_2_link" />
+    <exclude body1="base_link" body2="right1_3_link" />
+    <exclude body1="base_link" body2="right2_1_link" />
+    <exclude body1="base_link" body2="right2_2_link" />
+    <exclude body1="base_link" body2="right2_3_link" />
+    
+    <!-- 排除所有腿部链接之间的碰撞 -->
+    <exclude body1="left1_1_link" body2="left1_2_link" />
+    <exclude body1="left1_1_link" body2="left1_3_link" />
+    <exclude body1="left1_1_link" body2="left2_1_link" />
+    <exclude body1="left1_1_link" body2="left2_2_link" />
+    <exclude body1="left1_1_link" body2="left2_3_link" />
+    <exclude body1="left1_1_link" body2="right1_1_link" />
+    <exclude body1="left1_1_link" body2="right1_2_link" />
+    <exclude body1="left1_1_link" body2="right1_3_link" />
+    <exclude body1="left1_1_link" body2="right2_1_link" />
+    <exclude body1="left1_1_link" body2="right2_2_link" />
+    <exclude body1="left1_1_link" body2="right2_3_link" />
+    
+    <exclude body1="left1_2_link" body2="left1_3_link" />
+    <exclude body1="left1_2_link" body2="left2_1_link" />
+    <exclude body1="left1_2_link" body2="left2_2_link" />
+    <exclude body1="left1_2_link" body2="left2_3_link" />
+    <exclude body1="left1_2_link" body2="right1_1_link" />
+    <exclude body1="left1_2_link" body2="right1_2_link" />
+    <exclude body1="left1_2_link" body2="right1_3_link" />
+    <exclude body1="left1_2_link" body2="right2_1_link" />
+    <exclude body1="left1_2_link" body2="right2_2_link" />
+    <exclude body1="left1_2_link" body2="right2_3_link" />
+    
+    <exclude body1="left1_3_link" body2="left2_1_link" />
+    <exclude body1="left1_3_link" body2="left2_2_link" />
+    <exclude body1="left1_3_link" body2="left2_3_link" />
+    <exclude body1="left1_3_link" body2="right1_1_link" />
+    <exclude body1="left1_3_link" body2="right1_2_link" />
+    <exclude body1="left1_3_link" body2="right1_3_link" />
+    <exclude body1="left1_3_link" body2="right2_1_link" />
+    <exclude body1="left1_3_link" body2="right2_2_link" />
+    <exclude body1="left1_3_link" body2="right2_3_link" />
+    
+    <exclude body1="left2_1_link" body2="left2_2_link" />
+    <exclude body1="left2_1_link" body2="left2_3_link" />
+    <exclude body1="left2_1_link" body2="right1_1_link" />
+    <exclude body1="left2_1_link" body2="right1_2_link" />
+    <exclude body1="left2_1_link" body2="right1_3_link" />
+    <exclude body1="left2_1_link" body2="right2_1_link" />
+    <exclude body1="left2_1_link" body2="right2_2_link" />
+    <exclude body1="left2_1_link" body2="right2_3_link" />
+    
+    <exclude body1="left2_2_link" body2="left2_3_link" />
+    <exclude body1="left2_2_link" body2="right1_1_link" />
+    <exclude body1="left2_2_link" body2="right1_2_link" />
+    <exclude body1="left2_2_link" body2="right1_3_link" />
+    <exclude body1="left2_2_link" body2="right2_1_link" />
+    <exclude body1="left2_2_link" body2="right2_2_link" />
+    <exclude body1="left2_2_link" body2="right2_3_link" />
+    
+    <exclude body1="left2_3_link" body2="right1_1_link" />
+    <exclude body1="left2_3_link" body2="right1_2_link" />
+    <exclude body1="left2_3_link" body2="right1_3_link" />
+    <exclude body1="left2_3_link" body2="right2_1_link" />
+    <exclude body1="left2_3_link" body2="right2_2_link" />
+    <exclude body1="left2_3_link" body2="right2_3_link" />
+    
+    <exclude body1="right1_1_link" body2="right1_2_link" />
+    <exclude body1="right1_1_link" body2="right1_3_link" />
+    <exclude body1="right1_1_link" body2="right2_1_link" />
+    <exclude body1="right1_1_link" body2="right2_2_link" />
+    <exclude body1="right1_1_link" body2="right2_3_link" />
+    
+    <exclude body1="right1_2_link" body2="right1_3_link" />
+    <exclude body1="right1_2_link" body2="right2_1_link" />
+    <exclude body1="right1_2_link" body2="right2_2_link" />
+    <exclude body1="right1_2_link" body2="right2_3_link" />
+    
+    <exclude body1="right1_3_link" body2="right2_1_link" />
+    <exclude body1="right1_3_link" body2="right2_2_link" />
+    <exclude body1="right1_3_link" body2="right2_3_link" />
+    
+    <exclude body1="right2_1_link" body2="right2_2_link" />
+    <exclude body1="right2_1_link" body2="right2_3_link" />
+    
+    <exclude body1="right2_2_link" body2="right2_3_link" />
+    
+    <!-- 排除所有链接与足底的碰撞 -->
+    <exclude body1="left1_1_link" body2="left1_foot" />
+    <exclude body1="left1_2_link" body2="left1_foot" />
+    <exclude body1="left1_3_link" body2="left1_foot" />
+    <exclude body1="left2_1_link" body2="left1_foot" />
+    <exclude body1="left2_2_link" body2="left1_foot" />
+    <exclude body1="left2_3_link" body2="left1_foot" />
+    <exclude body1="right1_1_link" body2="left1_foot" />
+    <exclude body1="right1_2_link" body2="left1_foot" />
+    <exclude body1="right1_3_link" body2="left1_foot" />
+    <exclude body1="right2_1_link" body2="left1_foot" />
+    <exclude body1="right2_2_link" body2="left1_foot" />
+    <exclude body1="right2_3_link" body2="left1_foot" />
+    
+    <exclude body1="left1_1_link" body2="left2_foot" />
+    <exclude body1="left1_2_link" body2="left2_foot" />
+    <exclude body1="left1_3_link" body2="left2_foot" />
+    <exclude body1="left2_1_link" body2="left2_foot" />
+    <exclude body1="left2_2_link" body2="left2_foot" />
+    <exclude body1="left2_3_link" body2="left2_foot" />
+    <exclude body1="right1_1_link" body2="left2_foot" />
+    <exclude body1="right1_2_link" body2="left2_foot" />
+    <exclude body1="right1_3_link" body2="left2_foot" />
+    <exclude body1="right2_1_link" body2="left2_foot" />
+    <exclude body1="right2_2_link" body2="left2_foot" />
+    <exclude body1="right2_3_link" body2="left2_foot" />
+    
+    <exclude body1="left1_1_link" body2="right1_foot" />
+    <exclude body1="left1_2_link" body2="right1_foot" />
+    <exclude body1="left1_3_link" body2="right1_foot" />
+    <exclude body1="left2_1_link" body2="right1_foot" />
+    <exclude body1="left2_2_link" body2="right1_foot" />
+    <exclude body1="left2_3_link" body2="right1_foot" />
+    <exclude body1="right1_1_link" body2="right1_foot" />
+    <exclude body1="right1_2_link" body2="right1_foot" />
+    <exclude body1="right1_3_link" body2="right1_foot" />
+    <exclude body1="right2_1_link" body2="right1_foot" />
+    <exclude body1="right2_2_link" body2="right1_foot" />
+    <exclude body1="right2_3_link" body2="right1_foot" />
+    
+    <exclude body1="left1_1_link" body2="right2_foot" />
+    <exclude body1="left1_2_link" body2="right2_foot" />
+    <exclude body1="left1_3_link" body2="right2_foot" />
+    <exclude body1="left2_1_link" body2="right2_foot" />
+    <exclude body1="left2_2_link" body2="right2_foot" />
+    <exclude body1="left2_3_link" body2="right2_foot" />
+    <exclude body1="right1_1_link" body2="right2_foot" />
+    <exclude body1="right1_2_link" body2="right2_foot" />
+    <exclude body1="right1_3_link" body2="right2_foot" />
+    <exclude body1="right2_1_link" body2="right2_foot" />
+    <exclude body1="right2_2_link" body2="right2_foot" />
+    <exclude body1="right2_3_link" body2="right2_foot" />
+    
+    <!-- 排除base_link与足底的碰撞 -->
+    <exclude body1="base_link" body2="left1_foot" />
+    <exclude body1="base_link" body2="left2_foot" />
+    <exclude body1="base_link" body2="right1_foot" />
+    <exclude body1="base_link" body2="right2_foot" />
+    
+    <!-- 排除足底之间的碰撞 -->
+    <exclude body1="left1_foot" body2="left2_foot" />
+    <exclude body1="left1_foot" body2="right1_foot" />
+    <exclude body1="left1_foot" body2="right2_foot" />
+    <exclude body1="left2_foot" body2="right1_foot" />
+    <exclude body1="left2_foot" body2="right2_foot" />
+    <exclude body1="right1_foot" body2="right2_foot" />
+  </contact>
+
+  <sensor>
+    <actuatorpos name='left1_1_joint_p'  actuator='left1_1_joint' user='13'/>
+    <actuatorpos name='left1_2_joint_p'  actuator='left1_2_joint' user='13'/>
+    <actuatorpos name='left1_3_joint_p'  actuator='left1_3_joint' user='13'/>
+    <actuatorpos name='left2_1_joint_p'  actuator='left2_1_joint' user='13'/>
+    <actuatorpos name='left2_2_joint_p'  actuator='left2_2_joint' user='13'/>
+    <actuatorpos name='left2_3_joint_p'  actuator='left2_3_joint' user='13'/>
+    <actuatorpos name='right1_1_joint_p'  actuator='right1_1_joint' user='13'/>
+    <actuatorpos name='right1_2_joint_p'  actuator='right1_2_joint' user='13'/>
+    <actuatorpos name='right1_3_joint_p'  actuator='right1_3_joint' user='13'/>
+    <actuatorpos name='right2_1_joint_p'  actuator='right2_1_joint' user='13'/>
+    <actuatorpos name='right2_2_joint_p'  actuator='right2_2_joint' user='13'/>
+    <actuatorpos name='right2_3_joint_p'  actuator='right2_3_joint' user='13'/>
+    
+    <actuatorvel name='left1_1_joint_v'  actuator='left1_1_joint' user='13'/>
+    <actuatorvel name='left1_2_joint_v'  actuator='left1_2_joint' user='13'/>
+    <actuatorvel name='left1_3_joint_v'  actuator='left1_3_joint' user='13'/>
+    <actuatorvel name='left2_1_joint_v'  actuator='left2_1_joint' user='13'/>
+    <actuatorvel name='left2_2_joint_v'  actuator='left2_2_joint' user='13'/>
+    <actuatorvel name='left2_3_joint_v'  actuator='left2_3_joint' user='13'/>
+    <actuatorvel name='right1_1_joint_v'  actuator='right1_1_joint' user='13'/>
+    <actuatorvel name='right1_2_joint_v'  actuator='right1_2_joint' user='13'/>
+    <actuatorvel name='right1_3_joint_v'  actuator='right1_3_joint' user='13'/>
+    <actuatorvel name='right2_1_joint_v'  actuator='right2_1_joint' user='13'/>
+    <actuatorvel name='right2_2_joint_v'  actuator='right2_2_joint' user='13'/>
+    <actuatorvel name='right2_3_joint_v'  actuator='right2_3_joint' user='13'/>
+
+    <actuatorfrc name='left1_1_joint_f'  actuator='left1_1_joint' user='13' noise='1e-3'/>
+    <actuatorfrc name='left1_2_joint_f'  actuator='left1_2_joint' user='13' noise='1e-3'/>
+    <actuatorfrc name='left1_3_joint_f'  actuator='left1_3_joint' user='13' noise='1e-3'/>
+    <actuatorfrc name='left2_1_joint_f'  actuator='left2_1_joint' user='13' noise='1e-3'/>
+    <actuatorfrc name='left2_2_joint_f'  actuator='left2_2_joint' user='13' noise='1e-3'/>
+    <actuatorfrc name='left2_3_joint_f'  actuator='left2_3_joint' user='13' noise='1e-3'/>
+    <actuatorfrc name='right1_1_joint_f'  actuator='right1_1_joint' user='13' noise='1e-3'/>
+    <actuatorfrc name='right1_2_joint_f'  actuator='right1_2_joint' user='13' noise='1e-3'/>
+    <actuatorfrc name='right1_3_joint_f'  actuator='right1_3_joint' user='13' noise='1e-3'/>
+    <actuatorfrc name='right2_1_joint_f'  actuator='right2_1_joint' user='13' noise='1e-3'/>
+    <actuatorfrc name='right2_2_joint_f'  actuator='right2_2_joint' user='13' noise='1e-3'/>
+    <actuatorfrc name='right2_3_joint_f'  actuator='right2_3_joint' user='13' noise='1e-3'/>
+
+    <framequat     name='orientation' objtype='site' noise='0.001' objname='imu'/>
+    <framepos     name='position' objtype='site' noise='0.001' objname='imu'/>
+    <gyro          name='angular-velocity'    site='imu' noise='0.005' cutoff='34.9'/>
+    <velocimeter   name='linear-velocity'     site='imu' noise='0.001' cutoff='30'/>
+    <accelerometer name='linear-acceleration' site='imu' noise='0.005' cutoff='157'/>
+    <magnetometer  name='magnetometer'        site='imu'/>
+
+    <framepos name="base_link_site_pos" objtype="site" objname="base_link_site" />
+    <framequat name="base_link_site_quat" objtype="site" objname="base_link_site" />
+    <framelinvel name="base_link_site_linvel" objtype="site" objname="base_link_site" />
+    <frameangvel name="base_link_site_angvel" objtype="site" objname="base_link_site" />
+    <velocimeter name="base_link_site_vel" site="base_link_site" />
+  </sensor>
+</mujoco>

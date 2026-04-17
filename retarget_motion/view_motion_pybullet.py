@@ -19,7 +19,6 @@ import numpy as np
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPT_DIR.parent
-DEFAULT_ISAACGYMLOCO_ROOT = REPO_ROOT.parent / "IsaacgymLoco"
 
 if __package__ in (None, ""):
   if str(REPO_ROOT) not in sys.path:
@@ -63,39 +62,120 @@ class FrameView:
   toe_local_vel: np.ndarray = None
 
 
-def build_robot_specs(isaacgymloco_root):
-  root = Path(isaacgymloco_root)
+@dataclass(frozen=True)
+class MotionClip:
+  name: str
+  frames: np.ndarray
+  frame_duration: float
+  frame_size: int
+
+
+def build_robot_specs():
   return {
       "a1": RobotSpec(
           name="a1",
-          urdf_path=str(root / "legged_gym" / "resources" / "robots" / "a1" / "urdf" / "a1.urdf"),
+          urdf_path=str(REPO_ROOT / "assets" / "robots" / "a1" / "urdf" / "a1.urdf"),
           init_pos=np.array([0.0, 0.0, 0.32], dtype=np.float64),
           init_rot=np.array([0.0, 0.0, 0.0, 1.0], dtype=np.float64),
-          toe_link_ids=(6, 11, 16, 21)),
+          toe_link_ids=(6, 16, 11, 21)),
       "go2": RobotSpec(
           name="go2",
-          urdf_path=str(root / "legged_gym" / "resources" / "robots" / "go2" / "urdf" / "go2.urdf"),
+          urdf_path=str(REPO_ROOT / "assets" / "robots" / "go2" / "urdf" / "go2.urdf"),
           init_pos=np.array([0.0, 0.0, 0.35], dtype=np.float64),
           init_rot=np.array([0.0, 0.0, 0.0, 1.0], dtype=np.float64),
           toe_link_ids=(7, 13, 19, 25)),
       "sizu": RobotSpec(
           name="sizu",
-          urdf_path=str(root / "legged_gym" / "resources" / "robots" / "sizu" / "urdf" / "sizu.urdf"),
+          urdf_path=str(REPO_ROOT / "assets" / "robots" / "sizu" / "urdf" / "sizu.urdf"),
           init_pos=np.array([0.0, 0.0, 0.3], dtype=np.float64),
           init_rot=np.array([0.0, 0.0, 0.0, 1.0], dtype=np.float64),
           toe_link_ids=(12, 14, 13, 15)),
-      "aliengo": RobotSpec(
-          name="aliengo",
-          urdf_path=str(root / "legged_gym" / "resources" / "robots" / "aliengo" / "urdf" / "aliengo.urdf"),
-          init_pos=np.array([0.0, 0.0, 0.5], dtype=np.float64),
+      "laikago": RobotSpec(
+          name="laikago",
+          urdf_path=_pick_existing_path((
+              REPO_ROOT / "assets" / "robots" / "laikago" / "laikago_toes_limits.urdf",
+              REPO_ROOT / "assets" / "robots" / "laikago" / "laikago_toes.urdf",
+              REPO_ROOT / "assets" / "robots" / "laikago" / "laikago.urdf",
+          )),
+          init_pos=np.array([0.0, 0.0, 0.48], dtype=np.float64),
           init_rot=np.array([0.0, 0.0, 0.0, 1.0], dtype=np.float64),
-          toe_link_ids=(8, 15, 22, 29)),
+          toe_link_ids=()),
   }
+
+
+def _pick_existing_path(candidates):
+  for p in candidates:
+    if Path(p).exists():
+      return str(p)
+  return str(candidates[0])
+
+
+def _infer_toe_link_ids(pybullet, robot_id, fallback_ids=()):
+  if fallback_ids and len(fallback_ids) == 4:
+    return tuple(fallback_ids)
+
+  leg_alias = {
+      "fl": ("fl", "front_left", "lf"),
+      "fr": ("fr", "front_right", "rf"),
+      "rl": ("rl", "rear_left", "lh", "hl"),
+      "rr": ("rr", "rear_right", "rh", "hr"),
+  }
+  candidates = {k: [] for k in leg_alias}
+  num_joints = pybullet.getNumJoints(robot_id)
+
+  for jid in range(num_joints):
+    info = pybullet.getJointInfo(robot_id, jid)
+    link_name = info[12].decode("utf-8").lower() if isinstance(info[12], (bytes, bytearray)) else str(info[12]).lower()
+    joint_name = info[1].decode("utf-8").lower() if isinstance(info[1], (bytes, bytearray)) else str(info[1]).lower()
+    name = f"{joint_name} {link_name}"
+
+    leg_key = None
+    for k, aliases in leg_alias.items():
+      if any(a in name for a in aliases):
+        leg_key = k
+        break
+    if leg_key is None:
+      continue
+
+    score = -1
+    if "toe" in name or "foot" in name:
+      score = 3
+    elif "ankle" in name:
+      score = 2
+    elif "calf" in name or "lower" in name:
+      score = 1
+
+    if score >= 0:
+      candidates[leg_key].append((score, jid))
+
+  toe_ids = []
+  for leg in ("fl", "fr", "rl", "rr"):
+    if not candidates[leg]:
+      return tuple(fallback_ids)
+    toe_ids.append(max(candidates[leg], key=lambda x: x[0])[1])
+  return tuple(toe_ids)
 
 
 def load_motion_payload(motion_file):
   with open(motion_file, "r") as f:
     return json.load(f)
+
+
+def _iter_motion_files(motion_path):
+  motion_files = []
+  for path in sorted(motion_path.iterdir()):
+    if not path.is_file() or path.name.startswith("."):
+      continue
+    if path.suffix.lower() not in (".txt", ".json"):
+      continue
+    motion_files.append(path)
+  if not motion_files:
+    raise ValueError("no motion files found in directory: {}".format(motion_path))
+  return motion_files
+
+
+def _is_motion_payload(payload):
+  return isinstance(payload, dict) and bool(payload.get("Frames"))
 
 
 def infer_frame_size(payload):
@@ -110,6 +190,76 @@ def infer_frame_size(payload):
 
 def has_toe_and_velocity_data(payload):
   return infer_frame_size(payload) == FRAME_SIZE_61
+
+
+def _make_motion_clip(payload, default_name):
+  frame_size = infer_frame_size(payload)
+  frames = np.asarray(payload["Frames"], dtype=np.float64)
+  if frames.ndim != 2:
+    raise ValueError("motion frames must be a 2D array")
+  frame_duration = float(payload.get("FrameDuration", retarget_core.FRAME_DURATION))
+  if frame_duration <= 0:
+    raise ValueError("frame duration must be positive")
+  clip_name = str(
+      payload.get("Name") or payload.get("name") or payload.get("MotionName") or
+      payload.get("motion_name") or default_name)
+  return MotionClip(
+      name=clip_name,
+      frames=frames,
+      frame_duration=frame_duration,
+      frame_size=frame_size)
+
+
+def _load_motion_clips_from_file(motion_path):
+  payload = load_motion_payload(motion_path)
+
+  if _is_motion_payload(payload):
+    return [_make_motion_clip(payload, motion_path.stem)]
+
+  motion_entries = None
+  if isinstance(payload, dict):
+    for key in ("motions", "Motions", "clips", "Clips"):
+      if isinstance(payload.get(key), list):
+        motion_entries = payload[key]
+        break
+    if motion_entries is None:
+      named_entries = []
+      for key, value in payload.items():
+        if _is_motion_payload(value):
+          motion_payload = dict(value)
+          motion_payload.setdefault("Name", key)
+          named_entries.append(motion_payload)
+      if named_entries:
+        motion_entries = named_entries
+  elif isinstance(payload, list):
+    motion_entries = payload
+
+  if not motion_entries:
+    raise ValueError(
+        "unsupported motion file format: expected a single motion payload or "
+        "a list/dict of motion payloads")
+
+  clips = []
+  for idx, entry in enumerate(motion_entries):
+    if not _is_motion_payload(entry):
+      raise ValueError("motion entry {} has no Frames".format(idx))
+    clips.append(_make_motion_clip(entry, "{}_{:03d}".format(motion_path.stem, idx)))
+  return clips
+
+
+def load_motion_clips(motion_file):
+  motion_path = Path(motion_file)
+  if motion_path.is_dir():
+    clips = []
+    for path in _iter_motion_files(motion_path):
+      try:
+        clips.extend(_load_motion_clips_from_file(path))
+      except (ValueError, TypeError, json.JSONDecodeError) as exc:
+        print("[warn] skip non-motion file: {} ({})".format(path, exc))
+    if not clips:
+      raise ValueError("no valid motion clips found in directory: {}".format(motion_path))
+    return clips
+  return _load_motion_clips_from_file(motion_path)
 
 
 def build_frame_view(frame):
@@ -165,6 +315,13 @@ def _update_markers(pybullet, marker_ids, positions):
         marker_id, position.tolist(), IDENTITY_ROTATION.tolist())
 
 
+def _hide_markers(pybullet, marker_ids):
+  hidden = np.array([0.0, 0.0, -10.0], dtype=np.float64)
+  for marker_id in marker_ids:
+    pybullet.resetBasePositionAndOrientation(
+        marker_id, hidden.tolist(), IDENTITY_ROTATION.tolist())
+
+
 def _local_positions_to_world(pybullet, base_pos, base_rot, local_positions):
   world_positions = []
   for local_pos in local_positions:
@@ -200,7 +357,9 @@ def _set_vector_line(pybullet,
                      scale,
                      unique_id=None):
   if vector is None:
-    return unique_id
+    if unique_id is not None:
+      pybullet.removeUserDebugItem(unique_id)
+    return None
   start_local = np.asarray(start_local, dtype=np.float64)
   end_local = start_local + np.asarray(vector, dtype=np.float64) * scale
   kwargs = dict(
@@ -230,6 +389,15 @@ def _set_toe_error_lines(pybullet, toe_world_positions, toe_link_positions, uniq
   return new_ids
 
 
+def _clear_debug_items(pybullet, item_ids):
+  if item_ids is None:
+    return None
+  for item_id in item_ids:
+    if item_id is not None:
+      pybullet.removeUserDebugItem(item_id)
+  return None
+
+
 def _update_camera(pybullet, robot_id):
   base_pos = np.array(pybullet.getBasePositionAndOrientation(robot_id)[0], dtype=np.float64)
   yaw, pitch, dist = pybullet.getDebugVisualizerCamera()[8:11]
@@ -238,7 +406,6 @@ def _update_camera(pybullet, robot_id):
 
 def visualize_motion(motion_file,
                      robot,
-                     isaacgymloco_root=DEFAULT_ISAACGYMLOCO_ROOT,
                      playback_speed=1.0,
                      loops=0,
                      show_toe_markers=True,
@@ -248,17 +415,14 @@ def visualize_motion(motion_file,
   if playback_speed <= 0:
     raise ValueError("playback_speed must be positive")
 
-  specs = build_robot_specs(isaacgymloco_root)
+  specs = build_robot_specs()
   if robot not in specs:
     raise ValueError("unsupported robot: {}".format(robot))
   spec = specs[robot]
   if not Path(spec.urdf_path).exists():
     raise FileNotFoundError("URDF not found: {}".format(spec.urdf_path))
 
-  payload = load_motion_payload(motion_file)
-  frame_size = infer_frame_size(payload)
-  frames = np.asarray(payload["Frames"], dtype=np.float64)
-  frame_duration = float(payload["FrameDuration"])
+  clips = load_motion_clips(motion_file)
 
   pybullet, pybullet_data = _load_pybullet()
   client = pybullet.connect(pybullet.GUI)
@@ -277,38 +441,64 @@ def visualize_motion(motion_file,
         spec.init_rot.tolist(),
         flags=flags)
 
+    toe_link_ids = _infer_toe_link_ids(pybullet, robot_id, fallback_ids=spec.toe_link_ids)
+
     toe_marker_ids = None
     toe_error_line_ids = None
-    if frame_size == FRAME_SIZE_61 and show_toe_markers:
-      toe_marker_ids = _build_markers(
-          pybullet,
-          rgba_colors=([
-              [1, 0, 0, 1],
-              [1, 0.4, 0, 1],
-              [0, 0.7, 1, 1],
-              [0.7, 0, 1, 1],
-          ]),
-          radius=0.025)
-      toe_error_line_ids = [None] * 4
+    if show_toe_markers and any(clip.frame_size == FRAME_SIZE_61 for clip in clips):
+      if len(toe_link_ids) != 4:
+        print("[warn] toe links not found; disable toe markers for robot:", robot)
+      else:
+        toe_marker_ids = _build_markers(
+            pybullet,
+            rgba_colors=([
+                [1, 0, 0, 1],
+                [1, 0.4, 0, 1],
+                [0, 0.7, 1, 1],
+                [0.7, 0, 1, 1],
+            ]),
+            radius=0.025)
+        toe_error_line_ids = [None] * 4
 
     linear_vel_line = None
     angular_vel_line = None
     loops_done = 0
+    clip_index = 0
     frame_index = 0
+    clip_label = None
+    last_clip_index = None
 
     while True:
       time_start = time.time()
-      view = build_frame_view(frames[frame_index])
+      clip = clips[clip_index]
+      if clip_index != last_clip_index:
+        print("[viewer] clip {}/{}: {}".format(
+            clip_index + 1, len(clips), clip.name))
+        clip_label_pos = [0.0, 0.0, float(spec.init_pos[2]) + 0.35]
+        label_kwargs = dict(
+            text=clip.name,
+            textPosition=clip_label_pos,
+            textColorRGB=[1.0, 1.0, 1.0],
+            textSize=1.6)
+        if clip_label is not None:
+          label_kwargs["replaceItemUniqueId"] = clip_label
+        clip_label = pybullet.addUserDebugText(**label_kwargs)
+        last_clip_index = clip_index
+
+      view = build_frame_view(clip.frames[frame_index])
       retarget_core.set_pose(pybullet, robot_id, view.pose)
 
-      if toe_marker_ids is not None and view.toe_local_pos is not None:
+      if toe_marker_ids is not None and clip.frame_size == FRAME_SIZE_61 and view.toe_local_pos is not None:
         toe_world_positions = _toe_local_flat_to_world(pybullet, view.pose, view.toe_local_pos)
-        toe_link_positions = _get_link_world_positions(pybullet, robot_id, spec.toe_link_ids)
+        toe_link_positions = _get_link_world_positions(pybullet, robot_id, toe_link_ids)
         _update_markers(pybullet, toe_marker_ids, toe_world_positions)
         toe_error_line_ids = _set_toe_error_lines(
             pybullet, toe_world_positions, toe_link_positions, unique_ids=toe_error_line_ids)
+      elif toe_marker_ids is not None:
+        _hide_markers(pybullet, toe_marker_ids)
+        toe_error_line_ids = _clear_debug_items(pybullet, toe_error_line_ids)
 
-      if show_velocity and frame_size == FRAME_SIZE_61:
+      if show_velocity and clip.frame_size == FRAME_SIZE_61:
         linear_vel_line = _set_vector_line(
             pybullet,
             vector=view.root_linear_vel,
@@ -325,19 +515,39 @@ def visualize_motion(motion_file,
             color=[0, 1, 0],
             scale=1.0,
             unique_id=angular_vel_line)
+      else:
+        linear_vel_line = _set_vector_line(
+            pybullet,
+            vector=None,
+            robot_id=robot_id,
+            start_local=[0.0, 0.0, 0.25],
+            color=[1, 0, 0],
+            scale=0.33,
+            unique_id=linear_vel_line)
+        angular_vel_line = _set_vector_line(
+            pybullet,
+            vector=None,
+            robot_id=robot_id,
+            start_local=[0.0, 0.0, 0.0],
+            color=[0, 1, 0],
+            scale=1.0,
+            unique_id=angular_vel_line)
 
       if follow_camera:
         _update_camera(pybullet, robot_id)
       pybullet.configureDebugVisualizer(pybullet.COV_ENABLE_SINGLE_STEP_RENDERING, 1)
 
       frame_index += 1
-      if frame_index >= frames.shape[0]:
+      if frame_index >= clip.frames.shape[0]:
         frame_index = 0
-        loops_done += 1
-        if loops > 0 and loops_done >= loops:
-          break
+        clip_index += 1
+        if clip_index >= len(clips):
+          clip_index = 0
+          loops_done += 1
+          if loops > 0 and loops_done >= loops:
+            break
 
-      sleep_duration = frame_duration / playback_speed - (time.time() - time_start)
+      sleep_duration = clip.frame_duration / playback_speed - (time.time() - time_start)
       time.sleep(max(0.0, sleep_duration))
   finally:
     pybullet.disconnect(client)
@@ -345,16 +555,15 @@ def visualize_motion(motion_file,
 
 def main():
   parser = argparse.ArgumentParser()
-  parser.add_argument("--motion_file", required=True, help="Path to the motion JSON file.")
+  parser.add_argument(
+      "--motion_file",
+      required=True,
+      help="Path to a motion file or a directory of motion files.")
   parser.add_argument(
       "--robot",
       required=True,
-      choices=sorted(build_robot_specs(DEFAULT_ISAACGYMLOCO_ROOT).keys()),
+      choices=sorted(build_robot_specs().keys()),
       help="Robot type used by the motion file.")
-  parser.add_argument(
-      "--isaacgymloco_root",
-      default=str(DEFAULT_ISAACGYMLOCO_ROOT),
-      help="Root directory of the IsaacgymLoco repository.")
   parser.add_argument(
       "--playback_speed",
       type=float,
@@ -364,7 +573,7 @@ def main():
       "--loops",
       type=int,
       default=0,
-      help="How many times to replay the clip. 0 means infinite.")
+      help="How many times to replay the whole clip sequence. 0 means infinite.")
   parser.add_argument(
       "--hide_toe_markers",
       action="store_true",
@@ -386,7 +595,6 @@ def main():
   visualize_motion(
       motion_file=args.motion_file,
       robot=args.robot,
-      isaacgymloco_root=args.isaacgymloco_root,
       playback_speed=args.playback_speed,
       loops=args.loops,
       show_toe_markers=not args.hide_toe_markers,
