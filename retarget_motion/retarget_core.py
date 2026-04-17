@@ -319,7 +319,7 @@ def retarget_joint_data(robot_name, joint_pos_data, gui=False):
   config = load_robot_config(robot_name)
   pybullet, pd = _load_pybullet()
   if pybullet is None or pd is None:
-    return _retarget_motion_frames_fallback(config, joint_pos_data)
+    raise ImportError("pybullet is required for retarget_joint_data()")
 
   connection_mode = pybullet.GUI if gui else pybullet.DIRECT
   client = pybullet.connect(connection_mode)
@@ -358,4 +358,3 @@ def write_motion_file(frames, out_filename):
       f.write("]")
     f.write("\n]")
     f.write("\n}")
-
