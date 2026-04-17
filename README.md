@@ -1,164 +1,124 @@
-# Motion Imitation
+# Motion Retarget And Visualization
 
-Further development (new features, bug fixes etc) happen in the master branch.
-The 'paper' branch of this repository contains the original code accompanying the paper:
+This repository is now a focused toolset for quadruped motion retargeting and
+PyBullet visualization.
 
-"Learning Agile Robotic Locomotion Skills by Imitating Animals",
+The training stack, MPC controller code, and third-party solver/vendor trees
+from the original upstream project have been removed. What remains is the
+minimal code needed to:
 
-by Xue Bin Peng et al. It provides a Gym environment for training a simulated quadruped robot to imitate various reference motions, and example training code for learning the policies.
+- load source motion clips
+- retarget Laikago-style dog motions to A1
+- convert 19dof clips to the 61dof format used by downstream datasets
+- visualize motions in PyBullet with local robot assets only
 
-[![Learning Agile Robotic Locomotion Skills by Imitating Animals](https://github.com/erwincoumans/motion_imitation/blob/master/motion_imitation/data/motion_imitation_gif.gif)](https://www.youtube.com/watch?v=lKYh6uuCwRY&feature=youtu.be&hd=1 "Learning Agile Robotic Locomotion Skills by Imitating Animals")
+## Repository Layout
 
-Project page: https://xbpeng.github.io/projects/Robotic_Imitation/index.html
+- `retarget_motion/`
+  - retarget configs
+  - A1 motion library generation
+  - 19dof -> 61dof conversion
+  - PyBullet motion viewer
+- `motion_imitation/`
+  - minimal robot and utility modules still required by retargeting
+- `assets/robots/`
+  - self-contained robot assets for `a1`, `go2`, `sizu`, `laikago`
+- `motion_imitation/data/motions/`
+  - source motion clips
+- `motion_imitation/data/motions_a1/`
+  - retargeted A1 19dof clips
+- `motion_imitation/data/motions_a1_61dof/`
+  - converted A1 61dof clips
 
-## Getting Started
+## Environment
 
-We use this repository with Python 3.7 or Python 3.8 on Ubuntu, MacOS and Windows.
+The scripts have been verified in the user's conda environment:
 
-- Install MPC extension (Optional) `python3 setup.py install --user`
-
-Install dependencies:
-
-- Install MPI: `sudo apt install libopenmpi-dev`
-- Install requirements: `pip3 install -r requirements.txt`
-
-and it should be good to go.
-
-## Training Imitation Models
-
-To train a policy, run the following command:
-
-``python3 motion_imitation/run.py --mode train --motion_file motion_imitation/data/motions/dog_pace.txt --int_save_freq 10000000 --visualize``
-
-- `--mode` can be either `train` or `test`.
-- `--motion_file` specifies the reference motion that the robot is to imitate. `motion_imitation/data/motions/` contains different reference motion clips.
-- `--int_save_freq` specifies the frequency for saving intermediate policies every n policy steps.
-- `--visualize` enables visualization, and rendering can be disabled by removing the flag.
-- the trained model and logs will be written to `output/`.
-
-For parallel training with MPI run:
-
-``mpiexec -n 8 python3 motion_imitation/run.py --mode train --motion_file motion_imitation/data/motions/dog_pace.txt --int_save_freq 10000000``
-
-- `-n` is the number of parallel.
-
-## Testing Imitation Models
-
-To test a trained model, run the following command
-
-``python3 motion_imitation/run.py --mode test --motion_file motion_imitation/data/motions/dog_pace.txt --model_file motion_imitation/data/policies/dog_pace.zip --visualize``
-
-- `--model_file` specifies the `.zip` file that contains the trained model. Pretrained models are available in `motion_imitation/data/policies/`.
-
-
-## Motion Capture Data
-
-- `motion_imitation/data/motions/` contains different reference motion clips.
-- `motion_imitation/data/policies/` contains pretrained models for the different reference motions.
-
-For more information on the reference motion data format, see the [DeepMimic documentation](https://github.com/xbpeng/DeepMimic)
-
-# Locomotion using Model Predictive Control
-
-[![whole body MPC locomotion for real A1 robot and PyBullet](https://github.com/erwincoumans/motion_imitation/blob/master/motion_imitation/data/mpc_a1.png)](https://www.youtube.com/watch?v=NPvuap-SD78&hd=1 "whole body MPC locomotion for real A1 robot and PyBullet")
-
-## Getting started with MPC and the environment
-To start, just clone the codebase, and install the dependencies using
 ```bash
-pip install -r requirements.txt
+source /home/shibo/anaconda3/etc/profile.d/conda.sh
+conda activate unitree-rl
 ```
 
-Then, you can explore the environments by running:
+Minimal Python dependencies for the remaining code are listed in
+`requirements.txt`.
+
+## Generate A1 Motions
+
+Regenerate the A1 19dof motion library from the source clips:
+
 ```bash
-python3 -m motion_imitation.examples.test_env_gui --robot_type=A1 --motor_control_mode=Position --on_rack=True
+python retarget_motion/generate_a1_motion_library.py \
+  --output_dir motion_imitation/data/motions_a1
 ```
 
-The three commandline flags are:
+This writes:
 
-`robot_type`: choose between `A1` and `Laikago` for different robot.
+- one `.txt` file per retargeted motion
+- `provenance.json` describing how each clip was produced
 
-`motor_control_mode`: choose between `Position` ,`Torque` for different motor control modes.
+## Convert 19dof To 61dof
 
-`on_rack`: whether to fix the robot's base on a rack. Setting `on_rack=True` is handy for debugging visualizing open-loop gaits.
+Convert the generated A1 motions into the 61dof format:
 
-## The gym interface
-Additionally, the codebase can be directly installed as a pip package. Just run:
 ```bash
-pip3 install motion_imitation --user
+python retarget_motion/convert_19dof_to_61dof.py \
+  --input_dir motion_imitation/data/motions_a1 \
+  --output_dir motion_imitation/data/motions_a1_61dof \
+  --robot a1 \
+  --motion dog_pace \
+  --motion dog_trot \
+  --motion dog_backwards_pace \
+  --motion dog_backwards_trot \
+  --motion dog_spin \
+  --motion hopturn \
+  --motion inplace_steps \
+  --motion runningman \
+  --motion sidesteps \
+  --motion turn \
+  --motion_weight 1.0
 ```
 
-Then, you can directly invoke the default gym environment in Python:
-```python
-import gym
-env = gym.make('motion_imitation:A1GymEnv-v1')
-```
+## Visualize Motions In PyBullet
 
-Note that the pybullet rendering is slightly different from Mujoco. To enable GUI rendering and visualize the training process, you can call:
+Visualize either a single motion file or a whole directory:
 
-```python
-import gym
-env = gym.make('motion_imitation:A1GymEnv-v1', render=True)
-```
-
-which will pop up the standard pybullet renderer.
-
-And you can always call env.render(mode='rgb_array') to generate frames.
-
-## Running MPC on the real A1 robot
-Since the [SDK](https://github.com/unitreerobotics/unitree_legged_sdk) from Unitree is implemented in C++, we find the optimal way of robot interfacing to be via C++-python interface using pybind11.
-
-### Step 1: Build and Test the robot interface
-
-To start, build the python interface by running the following:
 ```bash
-cd third_party/unitree_legged_sdk
-mkdir build
-cd build
-cmake ..
-make
-```
-Then copy the built `robot_interface.XXX.so` file to the main directory (where you can see this README.md file).
-
-### Step 2: Setup correct permissions for non-sudo user
-Since the Unitree SDK requires memory locking and high-priority process, which is not usually granted without sudo, add the following lines to `/etc/security/limits.conf`:
-
-```
-<username> soft memlock unlimited
-<username> hard memlock unlimited
-<username> soft nice eip
-<username> hard nice eip
+python retarget_motion/view_motion_pybullet.py \
+  --motion_file motion_imitation/data/motions_a1 \
+  --robot a1
 ```
 
-You may need to reboot the computer for the above changes to get into effect.
+Supported robot assets in the viewer:
 
-### Step 3: Test robot interface.
+- `a1`
+- `go2`
+- `sizu`
+- `laikago`
 
-Test the python interfacing by running:
-'sudo python3 -m motion_imitation.examples.test_robot_interface'
+The viewer loads assets only from this repository. It no longer depends on any
+external `legged_gym` or IsaacGymLoco robot path.
 
-If the previous steps were completed correctly, the script should finish without throwing any errors.
+## Motion Formats
 
-Note that this code does *not* do anything on the actual robot.
+The supported frame layouts are:
 
-## Running the Whole-body MPC controller
+- `19dof`: root position (3) + root rotation quaternion (4) + joint angles (12)
+- `61dof`: 19dof pose + toe local targets + root/joint/toe velocities
 
-To see the whole-body MPC controller in sim, run:
-```bash
-python3 -m motion_imitation.examples.whole_body_controller_example
-```
+For visualization:
 
-To see the whole-body MPC controller on the real robot, run:
-```bash
-sudo python3 -m motion_imitation.examples.whole_body_controller_robot_example
-```
+- 19dof is enough to draw the robot pose itself
+- 61dof is only needed if you also want toe target markers and velocity overlays
 
-### Credits
+## Notes
 
-This repo was developed at Google Robotics and is maintained by one of its members, Erwin Coumans.
-The original Motion Imitation code was written by Jason Peng as part of an internship and student researcher at Google Robotics.
-Some MPC parts for A1 and running on real A1 are written by Yuxiang Yang, a former resident researcher at Google Robotics.
+- The vendored A1 URDF emits PyBullet warnings about missing inertial data on
+  some fixed links. These are warnings, not retarget blockers.
+- `motion_imitation/robots/a1.py` still contains a legacy import-time warm-up
+  path that can print a `RuntimeWarning` from `arccos`; the generated motion
+  outputs used here were still verified separately.
 
----
+## License
 
-*Disclaimer: This is not an official Google product.*
-
+This repository still contains code and assets derived from the original
+project. See `LICENSE.txt` and any per-asset license files under `assets/`.

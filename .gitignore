@@ -1,3 +1,6 @@
 __pycache__/
 *.pyc
 tests/
+.codex
+.codex/
+docs/superpowers/plans/
