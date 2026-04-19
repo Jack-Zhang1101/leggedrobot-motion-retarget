@@ -4,6 +4,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import argparse
 import os
 import sys
 import time
@@ -83,10 +84,15 @@ def update_camera(pybullet, robot):
 
 
 def main(argv=None):
-  del argv
+  parser = argparse.ArgumentParser()
+  parser.add_argument(
+      "--robot",
+      default=DEFAULT_ROBOT_NAME,
+      help="robot name passed to retarget_core.load_robot_config()")
+  args = parser.parse_args(argv)
 
   pybullet, pybullet_data = _load_pybullet_modules()
-  config = retarget_core.load_robot_config(DEFAULT_ROBOT_NAME)
+  config = retarget_core.load_robot_config(args.robot)
   client = pybullet.connect(
       pybullet.GUI,
       options="--width=1920 --height=1080 --mp4=\"test.mp4\" --mp4fps=60")
@@ -132,7 +138,10 @@ def main(argv=None):
           ref_joint_pos = retarget_core.process_ref_joint_pos_data(
               ref_joint_pos, config)
 
-          retarget_core.set_pose(pybullet, robot, retarget_frames[pose_idx])
+          retarget_core.set_pose(
+              pybullet,
+              robot,
+              retarget_core.output_pose_to_sim(retarget_frames[pose_idx], config))
           set_marker_pos(pybullet, ref_joint_pos, marker_ids)
           update_camera(pybullet, robot)
           pybullet.configureDebugVisualizer(

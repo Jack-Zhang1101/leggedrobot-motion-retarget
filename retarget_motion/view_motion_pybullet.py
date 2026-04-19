@@ -419,6 +419,10 @@ def visualize_motion(motion_file,
   if robot not in specs:
     raise ValueError("unsupported robot: {}".format(robot))
   spec = specs[robot]
+  try:
+    config = retarget_core.load_robot_config(robot)
+  except Exception:  # pylint: disable=broad-except
+    config = None
   if not Path(spec.urdf_path).exists():
     raise FileNotFoundError("URDF not found: {}".format(spec.urdf_path))
 
@@ -441,7 +445,10 @@ def visualize_motion(motion_file,
         spec.init_rot.tolist(),
         flags=flags)
 
-    toe_link_ids = _infer_toe_link_ids(pybullet, robot_id, fallback_ids=spec.toe_link_ids)
+    if config is not None and hasattr(config, "SIM_TOE_JOINT_IDS"):
+      toe_link_ids = tuple(config.SIM_TOE_JOINT_IDS)
+    else:
+      toe_link_ids = _infer_toe_link_ids(pybullet, robot_id, fallback_ids=spec.toe_link_ids)
 
     toe_marker_ids = None
     toe_error_line_ids = None
@@ -486,10 +493,18 @@ def visualize_motion(motion_file,
         last_clip_index = clip_index
 
       view = build_frame_view(clip.frames[frame_index])
-      retarget_core.set_pose(pybullet, robot_id, view.pose)
+      sim_pose = retarget_core.output_pose_to_sim(view.pose, config) if config is not None else view.pose
+      retarget_core.set_pose(pybullet, robot_id, sim_pose)
 
       if toe_marker_ids is not None and clip.frame_size == FRAME_SIZE_61 and view.toe_local_pos is not None:
-        toe_world_positions = _toe_local_flat_to_world(pybullet, view.pose, view.toe_local_pos)
+        toe_local_pos = view.toe_local_pos
+        if config is not None and hasattr(config, "SIM_LEG_ORDER"):
+          toe_local_pos = retarget_core.reorder_leg_blocks(
+              toe_local_pos,
+              getattr(config, "OUTPUT_LEG_ORDER", getattr(config, "SIM_LEG_ORDER", ())),
+              getattr(config, "SIM_LEG_ORDER", ()),
+              block_size=3)
+        toe_world_positions = _toe_local_flat_to_world(pybullet, sim_pose, toe_local_pos)
         toe_link_positions = _get_link_world_positions(pybullet, robot_id, toe_link_ids)
         _update_markers(pybullet, toe_marker_ids, toe_world_positions)
         toe_error_line_ids = _set_toe_error_lines(

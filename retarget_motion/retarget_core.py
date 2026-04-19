@@ -7,6 +7,17 @@ import numpy as np
 
 POS_SIZE = 3
 ROT_SIZE = 4
+JOINTS_PER_LEG = 3
+NUM_LEGS = 4
+JOINT_POSE_SIZE = JOINTS_PER_LEG * NUM_LEGS
+POSE_SIZE_19 = POS_SIZE + ROT_SIZE + JOINT_POSE_SIZE
+TOE_LOCAL_POS_SIZE = JOINT_POSE_SIZE
+LINEAR_VEL_SIZE = 3
+ANGULAR_VEL_SIZE = 3
+JOINT_VEL_SIZE = JOINT_POSE_SIZE
+TOE_LOCAL_VEL_SIZE = JOINT_POSE_SIZE
+FRAME_SIZE_61 = (POSE_SIZE_19 + TOE_LOCAL_POS_SIZE + LINEAR_VEL_SIZE +
+                 ANGULAR_VEL_SIZE + JOINT_VEL_SIZE + TOE_LOCAL_VEL_SIZE)
 DEFAULT_ROT = np.array([0, 0, 0, 1], dtype=np.float64)
 FRAME_DURATION = 0.01667
 GROUND_URDF_FILENAME = "plane_implicit.urdf"
@@ -123,10 +134,116 @@ def _calc_heading_rot(q):
 def load_robot_config(robot_name):
   module_name = {
       "a1": "retarget_motion.retarget_config_a1",
+      "go2": "retarget_motion.retarget_config_go2",
       "laikago": "retarget_motion.retarget_config_laikago",
       "vision60": "retarget_motion.retarget_config_vision60",
   }[robot_name]
   return importlib.import_module(module_name)
+
+
+def reorder_leg_blocks(data, src_leg_order, dst_leg_order, block_size=JOINTS_PER_LEG):
+  data = np.asarray(data, dtype=np.float64)
+  src_leg_order = tuple(src_leg_order)
+  dst_leg_order = tuple(dst_leg_order)
+  expected_size = len(src_leg_order) * block_size
+  if data.shape[-1] != expected_size:
+    raise ValueError(
+        "expected trailing dimension {}, got {}".format(expected_size, data.shape[-1]))
+
+  src_to_idx = {name: idx for idx, name in enumerate(src_leg_order)}
+  blocks = []
+  for leg_name in dst_leg_order:
+    src_idx = src_to_idx[leg_name]
+    start = src_idx * block_size
+    end = start + block_size
+    blocks.append(data[..., start:end])
+  return np.concatenate(blocks, axis=-1)
+
+
+def _get_sim_leg_order(config):
+  return tuple(getattr(config, "SIM_LEG_ORDER", ()))
+
+
+def _get_output_leg_order(config):
+  output_order = tuple(getattr(config, "OUTPUT_LEG_ORDER", ()))
+  if output_order:
+    return output_order
+  return _get_sim_leg_order(config)
+
+
+def _has_custom_output_leg_order(config):
+  sim_leg_order = _get_sim_leg_order(config)
+  output_leg_order = _get_output_leg_order(config)
+  return bool(sim_leg_order) and bool(output_leg_order) and sim_leg_order != output_leg_order
+
+
+def _reorder_pose_joint_blocks(pose, src_leg_order, dst_leg_order):
+  pose = np.asarray(pose, dtype=np.float64)
+  if pose.shape[-1] != POSE_SIZE_19:
+    raise ValueError("expected 19-value pose, got {}".format(pose.shape[-1]))
+  joint_pose = reorder_leg_blocks(
+      pose[(POS_SIZE + ROT_SIZE):], src_leg_order, dst_leg_order, block_size=JOINTS_PER_LEG)
+  return np.concatenate([pose[:(POS_SIZE + ROT_SIZE)], joint_pose], axis=-1)
+
+
+def sim_pose_to_output(pose, config):
+  pose = np.asarray(pose, dtype=np.float64)
+  if not _has_custom_output_leg_order(config):
+    return pose.copy()
+  return _reorder_pose_joint_blocks(
+      pose, _get_sim_leg_order(config), _get_output_leg_order(config))
+
+
+def output_pose_to_sim(pose, config):
+  pose = np.asarray(pose, dtype=np.float64)
+  if not _has_custom_output_leg_order(config):
+    return pose.copy()
+  return _reorder_pose_joint_blocks(
+      pose, _get_output_leg_order(config), _get_sim_leg_order(config))
+
+
+def _reorder_frame_61_leg_blocks(frame, src_leg_order, dst_leg_order):
+  frame = np.asarray(frame, dtype=np.float64)
+  if frame.shape[-1] != FRAME_SIZE_61:
+    raise ValueError("expected 61-value frame, got {}".format(frame.shape[-1]))
+
+  reordered = frame.copy()
+  reordered[:POSE_SIZE_19] = _reorder_pose_joint_blocks(
+      frame[:POSE_SIZE_19], src_leg_order, dst_leg_order)
+  reordered[POSE_SIZE_19:(POSE_SIZE_19 + TOE_LOCAL_POS_SIZE)] = reorder_leg_blocks(
+      frame[POSE_SIZE_19:(POSE_SIZE_19 + TOE_LOCAL_POS_SIZE)],
+      src_leg_order,
+      dst_leg_order,
+      block_size=JOINTS_PER_LEG)
+  joint_vel_start = POSE_SIZE_19 + TOE_LOCAL_POS_SIZE + LINEAR_VEL_SIZE + ANGULAR_VEL_SIZE
+  joint_vel_end = joint_vel_start + JOINT_VEL_SIZE
+  reordered[joint_vel_start:joint_vel_end] = reorder_leg_blocks(
+      frame[joint_vel_start:joint_vel_end],
+      src_leg_order,
+      dst_leg_order,
+      block_size=JOINTS_PER_LEG)
+  reordered[joint_vel_end:(joint_vel_end + TOE_LOCAL_VEL_SIZE)] = reorder_leg_blocks(
+      frame[joint_vel_end:(joint_vel_end + TOE_LOCAL_VEL_SIZE)],
+      src_leg_order,
+      dst_leg_order,
+      block_size=JOINTS_PER_LEG)
+  return reordered
+
+
+def sim_frame_61_to_output(frame, config):
+  frame = np.asarray(frame, dtype=np.float64)
+  if not _has_custom_output_leg_order(config):
+    return frame.copy()
+  return _reorder_frame_61_leg_blocks(
+      frame, _get_sim_leg_order(config), _get_output_leg_order(config))
+
+
+def output_frame_61_to_sim(frame, config):
+  frame = np.asarray(frame, dtype=np.float64)
+  if not _has_custom_output_leg_order(config):
+    return frame.copy()
+  return _reorder_frame_61_leg_blocks(
+      frame, _get_output_leg_order(config), _get_sim_leg_order(config))
 
 
 def load_ref_data(filename, frame_start=None, frame_end=None):
@@ -309,7 +426,7 @@ def retarget_motion_frames(robot, config, joint_pos_data, pybullet=None):
     if f == 0:
       pose_size = curr_pose.shape[-1]
       new_frames = np.zeros([num_frames, pose_size], dtype=np.float64)
-    new_frames[f] = curr_pose
+    new_frames[f] = sim_pose_to_output(curr_pose, config)
 
   new_frames[:, 0:2] -= new_frames[0, 0:2]
   return new_frames

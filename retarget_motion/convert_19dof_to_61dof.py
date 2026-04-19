@@ -39,7 +39,7 @@ TARGET_FRAME_SIZE = (SOURCE_FRAME_SIZE + TOE_LOCAL_POS_SIZE + LINEAR_VEL_SIZE +
                      ANGULAR_VEL_SIZE + JOINT_VEL_SIZE + TOE_LOCAL_VEL_SIZE)
 
 IDENTITY_ROTATION = np.array([0.0, 0.0, 0.0, 1.0], dtype=np.float64)
-ROBOT_CHOICES = ("a1", "laikago", "vision60")
+ROBOT_CHOICES = ("a1", "go2", "laikago", "vision60")
 DEFAULT_INPUT_DIR = REPO_ROOT / "motion_imitation" / "data" / "motions_a1"
 DEFAULT_OUTPUT_DIR = REPO_ROOT / "motion_imitation" / "data" / "motions_a1_61dof"
 
@@ -160,13 +160,23 @@ def convert_motion_frames(source_frames, robot_name, frame_duration):
     converted_frames = np.zeros((num_source_frames - 1, TARGET_FRAME_SIZE), dtype=np.float64)
 
     for frame_idx in range(num_source_frames - 1):
-      curr_pose = np.array(source_frames[frame_idx], dtype=np.float64, copy=True)
-      next_pose = np.array(source_frames[frame_idx + 1], dtype=np.float64, copy=True)
+      curr_pose = retarget_core.output_pose_to_sim(source_frames[frame_idx], config)
+      next_pose = retarget_core.output_pose_to_sim(source_frames[frame_idx + 1], config)
 
       curr_toe_local = _get_toe_local_positions(
           pybullet, robot, curr_pose, config.SIM_TOE_JOINT_IDS)
       next_toe_local = _get_toe_local_positions(
           pybullet, robot, next_pose, config.SIM_TOE_JOINT_IDS)
+      curr_toe_local = retarget_core.reorder_leg_blocks(
+          curr_toe_local,
+          getattr(config, "SIM_LEG_ORDER", ()),
+          getattr(config, "OUTPUT_LEG_ORDER", getattr(config, "SIM_LEG_ORDER", ())),
+          block_size=3) if getattr(config, "SIM_LEG_ORDER", ()) else curr_toe_local
+      next_toe_local = retarget_core.reorder_leg_blocks(
+          next_toe_local,
+          getattr(config, "SIM_LEG_ORDER", ()),
+          getattr(config, "OUTPUT_LEG_ORDER", getattr(config, "SIM_LEG_ORDER", ())),
+          block_size=3) if getattr(config, "SIM_LEG_ORDER", ()) else next_toe_local
 
       root_linear_vel = _calc_root_linear_velocity(
           pybullet, curr_pose, next_pose, frame_duration)
@@ -176,10 +186,15 @@ def convert_motion_frames(source_frames, robot_name, frame_duration):
           np.asarray(retarget_core.get_joint_pose(next_pose), dtype=np.float64) -
           np.asarray(retarget_core.get_joint_pose(curr_pose), dtype=np.float64)
       ) / frame_duration
+      joint_vel = retarget_core.reorder_leg_blocks(
+          joint_vel,
+          getattr(config, "SIM_LEG_ORDER", ()),
+          getattr(config, "OUTPUT_LEG_ORDER", getattr(config, "SIM_LEG_ORDER", ())),
+          block_size=3) if getattr(config, "SIM_LEG_ORDER", ()) else joint_vel
       toe_local_vel = (next_toe_local - curr_toe_local) / frame_duration
 
       converted_frames[frame_idx] = np.concatenate([
-          curr_pose,
+          retarget_core.sim_pose_to_output(curr_pose, config),
           curr_toe_local,
           root_linear_vel,
           root_angular_vel,
