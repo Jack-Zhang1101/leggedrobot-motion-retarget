@@ -344,7 +344,8 @@ def _solve_target_robot_joint_pose(pybullet,
 
 def adapt_motion_to_robot(source_motion,
                           target_robot_name="a1",
-                          source_robot_name="laikago"):
+                          source_robot_name="laikago",
+                          target_root_height_offset=None):
   if not isinstance(source_motion, motion_data.MotionData):
     raise TypeError("source_motion must be a MotionData instance")
 
@@ -392,7 +393,10 @@ def adapt_motion_to_robot(source_motion,
 
       target_root_pos = source_root_pos.copy()
       target_root_pos[2] = source_root_pos[2] - source_root_z0 + target_root_z0
-      target_root_pos[2] += float(getattr(target_config, "ADAPT_ROOT_HEIGHT_OFFSET", 0.0))
+      if target_root_height_offset is None:
+        target_root_pos[2] += float(getattr(target_config, "ADAPT_ROOT_HEIGHT_OFFSET", 0.0))
+      else:
+        target_root_pos[2] += float(target_root_height_offset)
       target_root_rot = _convert_root_rotation_between_robots(
           source_root_rot, source_config.INIT_ROT, target_config.INIT_ROT)
 
@@ -423,9 +427,13 @@ def adapt_motion_to_a1(source_motion):
   return adapt_motion_to_robot(source_motion, target_robot_name="a1", source_robot_name="laikago")
 
 
-def load_and_adapt_motion_file(source_motion_path, target_robot_name="a1", source_robot_name="laikago"):
+def load_and_adapt_motion_file(source_motion_path,
+                               target_robot_name="a1",
+                               source_robot_name="laikago",
+                               target_root_height_offset=None):
   motion = motion_data.MotionData(str(Path(source_motion_path)))
   return adapt_motion_to_robot(
       motion,
       target_robot_name=target_robot_name,
-      source_robot_name=source_robot_name)
+      source_robot_name=source_robot_name,
+      target_root_height_offset=target_root_height_offset)

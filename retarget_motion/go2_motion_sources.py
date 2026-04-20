@@ -8,6 +8,9 @@ DERIVED = a1_motion_sources.DERIVED
 ADAPTED = a1_motion_sources.ADAPTED
 
 MOTION_SPECS = dict(a1_motion_sources.MOTION_SPECS)
+MOTION_SPECS["turn"] = dict(
+    MOTION_SPECS["turn"],
+    adapt_root_height_offset=-0.02)
 
 
 def ordered_motion_names():

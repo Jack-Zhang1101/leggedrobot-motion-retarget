@@ -64,7 +64,9 @@ def _generate_raw_motion(spec):
 
 def _generate_adapted_motion(spec):
   return motion_adaptation.load_and_adapt_motion_file(
-      spec["source_motion_path"], target_robot_name="go2")
+      spec["source_motion_path"],
+      target_robot_name="go2",
+      target_root_height_offset=spec.get("adapt_root_height_offset"))
 
 
 def _generate_motion(name, generated_cache):
@@ -107,6 +109,7 @@ def generate_library(output_dir=DEFAULT_OUTPUT_DIR, motion_names=None):
         "source_motion": spec.get("source_motion"),
         "source_motion_path": (
             str(spec["source_motion_path"]) if "source_motion_path" in spec else None),
+        "adapt_root_height_offset": spec.get("adapt_root_height_offset"),
         "metadata_motion_path": (
             str(spec["metadata_motion_path"]) if "metadata_motion_path" in spec else None),
         "output_path": str(output_path),

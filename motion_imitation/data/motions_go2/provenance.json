@@ -1,5 +1,6 @@
 {
   "dog_backwards_pace": {
+    "adapt_root_height_offset": null,
     "joint_pos_path": null,
     "metadata_motion_path": "/data-ssd/zhang/LeggedRobot/motion_imitation/motion_imitation/data/motions/dog_backwards_pace.txt",
     "mode": "derived",
@@ -8,6 +9,7 @@
     "source_motion_path": null
   },
   "dog_backwards_trot": {
+    "adapt_root_height_offset": null,
     "joint_pos_path": null,
     "metadata_motion_path": "/data-ssd/zhang/LeggedRobot/motion_imitation/motion_imitation/data/motions/dog_backwards_trot.txt",
     "mode": "derived",
@@ -16,6 +18,7 @@
     "source_motion_path": null
   },
   "dog_pace": {
+    "adapt_root_height_offset": null,
     "joint_pos_path": "/data-ssd/zhang/LeggedRobot/motion_imitation/retarget_motion/data/dog_pace_joint_pos.txt",
     "metadata_motion_path": "/data-ssd/zhang/LeggedRobot/motion_imitation/motion_imitation/data/motions/dog_pace.txt",
     "mode": "raw",
@@ -24,6 +27,7 @@
     "source_motion_path": null
   },
   "dog_spin": {
+    "adapt_root_height_offset": null,
     "joint_pos_path": null,
     "metadata_motion_path": "/data-ssd/zhang/LeggedRobot/motion_imitation/motion_imitation/data/motions/dog_spin.txt",
     "mode": "adapted",
@@ -32,6 +36,7 @@
     "source_motion_path": "/data-ssd/zhang/LeggedRobot/motion_imitation/motion_imitation/data/motions/dog_spin.txt"
   },
   "dog_trot": {
+    "adapt_root_height_offset": null,
     "joint_pos_path": "/data-ssd/zhang/LeggedRobot/motion_imitation/retarget_motion/data/dog_trot_joint_pos.txt",
     "metadata_motion_path": "/data-ssd/zhang/LeggedRobot/motion_imitation/motion_imitation/data/motions/dog_trot.txt",
     "mode": "raw",
@@ -40,6 +45,7 @@
     "source_motion_path": null
   },
   "hopturn": {
+    "adapt_root_height_offset": null,
     "joint_pos_path": null,
     "metadata_motion_path": "/data-ssd/zhang/LeggedRobot/motion_imitation/motion_imitation/data/motions/hopturn.txt",
     "mode": "adapted",
@@ -48,6 +54,7 @@
     "source_motion_path": "/data-ssd/zhang/LeggedRobot/motion_imitation/motion_imitation/data/motions/hopturn.txt"
   },
   "inplace_steps": {
+    "adapt_root_height_offset": null,
     "joint_pos_path": null,
     "metadata_motion_path": "/data-ssd/zhang/LeggedRobot/motion_imitation/motion_imitation/data/motions/inplace_steps.txt",
     "mode": "adapted",
@@ -56,6 +63,7 @@
     "source_motion_path": "/data-ssd/zhang/LeggedRobot/motion_imitation/motion_imitation/data/motions/inplace_steps.txt"
   },
   "runningman": {
+    "adapt_root_height_offset": null,
     "joint_pos_path": null,
     "metadata_motion_path": "/data-ssd/zhang/LeggedRobot/motion_imitation/motion_imitation/data/motions/runningman.txt",
     "mode": "adapted",
@@ -64,6 +72,7 @@
     "source_motion_path": "/data-ssd/zhang/LeggedRobot/motion_imitation/motion_imitation/data/motions/runningman.txt"
   },
   "sidesteps": {
+    "adapt_root_height_offset": null,
     "joint_pos_path": null,
     "metadata_motion_path": "/data-ssd/zhang/LeggedRobot/motion_imitation/motion_imitation/data/motions/sidesteps.txt",
     "mode": "adapted",
@@ -72,6 +81,7 @@
     "source_motion_path": "/data-ssd/zhang/LeggedRobot/motion_imitation/motion_imitation/data/motions/sidesteps.txt"
   },
   "turn": {
+    "adapt_root_height_offset": -0.02,
     "joint_pos_path": null,
     "metadata_motion_path": "/data-ssd/zhang/LeggedRobot/motion_imitation/motion_imitation/data/motions/turn.txt",
     "mode": "adapted",
