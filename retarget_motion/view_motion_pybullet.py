@@ -87,9 +87,9 @@ def build_robot_specs():
       "sizu": RobotSpec(
           name="sizu",
           urdf_path=str(REPO_ROOT / "assets" / "robots" / "sizu" / "urdf" / "sizu.urdf"),
-          init_pos=np.array([0.0, 0.0, 0.3], dtype=np.float64),
+          init_pos=np.array([0.0, 0.0, 0.28], dtype=np.float64),
           init_rot=np.array([0.0, 0.0, 0.0, 1.0], dtype=np.float64),
-          toe_link_ids=(12, 14, 13, 15)),
+          toe_link_ids=(3, 7, 11, 15)),
       "laikago": RobotSpec(
           name="laikago",
           urdf_path=_pick_existing_path((

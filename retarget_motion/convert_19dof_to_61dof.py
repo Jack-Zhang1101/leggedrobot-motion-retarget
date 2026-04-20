@@ -39,7 +39,7 @@ TARGET_FRAME_SIZE = (SOURCE_FRAME_SIZE + TOE_LOCAL_POS_SIZE + LINEAR_VEL_SIZE +
                      ANGULAR_VEL_SIZE + JOINT_VEL_SIZE + TOE_LOCAL_VEL_SIZE)
 
 IDENTITY_ROTATION = np.array([0.0, 0.0, 0.0, 1.0], dtype=np.float64)
-ROBOT_CHOICES = ("a1", "go2", "laikago", "vision60")
+ROBOT_CHOICES = ("a1", "go2", "sizu", "laikago", "vision60")
 DEFAULT_INPUT_DIR = REPO_ROOT / "motion_imitation" / "data" / "motions_a1"
 DEFAULT_OUTPUT_DIR = REPO_ROOT / "motion_imitation" / "data" / "motions_a1_61dof"
 

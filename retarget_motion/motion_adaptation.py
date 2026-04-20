@@ -26,6 +26,10 @@ ANALYTIC_LEG_SPECS = {
         upper_leg_length=0.213,
         lower_leg_length=0.213,
         hip_link_length=0.0955),
+    "sizu": AnalyticLegSpec(
+        upper_leg_length=0.295833,
+        lower_leg_length=0.280714,
+        hip_link_length=0.0105),
 }
 
 
@@ -161,10 +165,17 @@ def _compute_leg_length_scales(source_robot_name, target_robot_name, remap=None)
     target_robot = pybullet.loadURDF(
         target_config.URDF_FILENAME, target_config.INIT_POS, target_config.INIT_ROT)
 
+    source_scale_joint_pose = np.asarray(
+        getattr(source_config, "ADAPT_SCALE_JOINT_POSE", source_config.DEFAULT_JOINT_POSE),
+        dtype=np.float64)
+    target_scale_joint_pose = np.asarray(
+        getattr(target_config, "ADAPT_SCALE_JOINT_POSE", target_config.DEFAULT_JOINT_POSE),
+        dtype=np.float64)
+
     retarget_core.set_pose(pybullet, source_robot, np.concatenate([
-        source_config.INIT_POS, source_config.INIT_ROT, source_config.DEFAULT_JOINT_POSE]))
+        source_config.INIT_POS, source_config.INIT_ROT, source_scale_joint_pose]))
     retarget_core.set_pose(pybullet, target_robot, np.concatenate([
-        target_config.INIT_POS, target_config.INIT_ROT, target_config.DEFAULT_JOINT_POSE]))
+        target_config.INIT_POS, target_config.INIT_ROT, target_scale_joint_pose]))
 
     source_toes = _get_link_world_positions(
         pybullet, source_robot, source_config.SIM_TOE_JOINT_IDS)
@@ -189,6 +200,27 @@ def _compute_leg_length_scales(source_robot_name, target_robot_name, remap=None)
     return target_lengths / source_lengths
   finally:
     pybullet.disconnect(client)
+
+
+def _smooth_series(values, window):
+  values = np.asarray(values, dtype=np.float64)
+  if window is None or window <= 1 or values.shape[0] <= 2:
+    return values.copy()
+
+  window = int(window)
+  if window % 2 == 0:
+    window += 1
+
+  half = window // 2
+  weights = np.arange(1, half + 2, dtype=np.float64)
+  weights = np.concatenate([weights, weights[-2::-1]])
+  weights /= np.sum(weights)
+
+  padded = np.pad(values, ((half, half), (0, 0)), mode="edge")
+  smoothed = np.empty_like(values, dtype=np.float64)
+  for col in range(values.shape[1]):
+    smoothed[:, col] = np.convolve(padded[:, col], weights, mode="valid")
+  return smoothed
 
 
 def _solve_target_joint_pose(pybullet, robot, config, target_world_toe_positions):
@@ -325,8 +357,9 @@ def _solve_target_robot_joint_pose(pybullet,
                                    target_world_toe_positions,
                                    target_joint_low,
                                    target_joint_high):
+  use_analytic = getattr(target_config, "USE_ANALYTIC_ADAPT_IK", True)
   analytic_leg_spec = ANALYTIC_LEG_SPECS.get(target_robot_name)
-  if analytic_leg_spec is not None:
+  if use_analytic and analytic_leg_spec is not None:
     return _solve_analytic_joint_pose(
         target_root_pos,
         target_root_rot,
@@ -342,10 +375,52 @@ def _solve_target_robot_joint_pose(pybullet,
       pybullet, target_robot, target_config, target_world_toe_positions)
 
 
+def _smooth_joint_pose_frames(frames, window):
+  frames = np.asarray(frames, dtype=np.float64)
+  if window is None or window <= 1:
+    return frames.copy()
+
+  smoothed = np.array(frames, dtype=np.float64, copy=True)
+  smoothed[:, 7:19] = _smooth_series(smoothed[:, 7:19], window)
+  return smoothed
+
+
+def _adjust_frames_root_height_for_contact(pybullet, target_robot, target_config, frames):
+  target_clearance = getattr(target_config, "ADAPT_FOOT_CLEARANCE_TARGET", None)
+  if target_clearance is None:
+    return np.asarray(frames, dtype=np.float64)
+
+  frames = np.array(frames, dtype=np.float64, copy=True)
+  foot_bottom_offset = float(getattr(target_config, "ADAPT_FOOT_BOTTOM_OFFSET", 0.0))
+  foot_bottom_heights = []
+
+  for frame in frames:
+    retarget_core.set_pose(pybullet, target_robot, frame)
+    for toe_id in target_config.SIM_TOE_JOINT_IDS:
+      toe_center_z = pybullet.getLinkState(
+          target_robot, toe_id, computeForwardKinematics=True)[4][2]
+      foot_bottom_heights.append(toe_center_z - foot_bottom_offset)
+
+  foot_bottom_heights = np.asarray(foot_bottom_heights, dtype=np.float64)
+  clearance_stat = str(
+      getattr(target_config, "ADAPT_FOOT_CLEARANCE_STAT", "min")).lower()
+  if clearance_stat == "percentile":
+    percentile = float(getattr(target_config, "ADAPT_FOOT_CLEARANCE_PERCENTILE", 5.0))
+    anchor_height = np.percentile(foot_bottom_heights, percentile)
+  else:
+    anchor_height = np.min(foot_bottom_heights)
+
+  root_height_delta = float(target_clearance) - float(anchor_height)
+  frames[:, 2] += root_height_delta
+  return frames
+
+
 def adapt_motion_to_robot(source_motion,
                           target_robot_name="a1",
                           source_robot_name="laikago",
-                          target_root_height_offset=None):
+                          target_root_height_offset=None,
+                          leg_scale_multiplier=1.0,
+                          joint_smoothing_window=None):
   if not isinstance(source_motion, motion_data.MotionData):
     raise TypeError("source_motion must be a MotionData instance")
 
@@ -387,7 +462,7 @@ def adapt_motion_to_robot(source_motion,
       source_world_hips = _reorder_local_toes_for_target(source_world_hips, leg_remap)
       source_hip_toe_deltas = _hip_toe_deltas(source_world_toes, source_world_hips)
       source_hip_toe_deltas = [
-          float(scale) * np.asarray(delta, dtype=np.float64)
+          float(scale) * float(leg_scale_multiplier) * np.asarray(delta, dtype=np.float64)
           for scale, delta in zip(leg_length_scales, source_hip_toe_deltas)
       ]
 
@@ -416,9 +491,14 @@ def adapt_motion_to_robot(source_motion,
           target_joint_low,
           target_joint_high)
       target_frame_sim = np.concatenate([target_root_pos, target_root_rot, target_joint_pose])
-      frames.append(retarget_core.sim_pose_to_output(target_frame_sim, target_config))
+      frames.append(target_frame_sim)
 
-    return np.asarray(frames, dtype=np.float64)
+    frames = _smooth_joint_pose_frames(frames, joint_smoothing_window)
+    frames = _adjust_frames_root_height_for_contact(
+        pybullet, target_robot, target_config, frames)
+    return np.asarray([
+        retarget_core.sim_pose_to_output(frame, target_config) for frame in frames
+    ], dtype=np.float64)
   finally:
     pybullet.disconnect(client)
 
@@ -430,10 +510,14 @@ def adapt_motion_to_a1(source_motion):
 def load_and_adapt_motion_file(source_motion_path,
                                target_robot_name="a1",
                                source_robot_name="laikago",
-                               target_root_height_offset=None):
+                               target_root_height_offset=None,
+                               leg_scale_multiplier=1.0,
+                               joint_smoothing_window=None):
   motion = motion_data.MotionData(str(Path(source_motion_path)))
   return adapt_motion_to_robot(
       motion,
       target_robot_name=target_robot_name,
       source_robot_name=source_robot_name,
-      target_root_height_offset=target_root_height_offset)
+      target_root_height_offset=target_root_height_offset,
+      leg_scale_multiplier=leg_scale_multiplier,
+      joint_smoothing_window=joint_smoothing_window)

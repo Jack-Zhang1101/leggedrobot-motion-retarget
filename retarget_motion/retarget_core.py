@@ -135,6 +135,7 @@ def load_robot_config(robot_name):
   module_name = {
       "a1": "retarget_motion.retarget_config_a1",
       "go2": "retarget_motion.retarget_config_go2",
+      "sizu": "retarget_motion.retarget_config_sizu",
       "laikago": "retarget_motion.retarget_config_laikago",
       "vision60": "retarget_motion.retarget_config_vision60",
   }[robot_name]
