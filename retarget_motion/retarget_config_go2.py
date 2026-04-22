@@ -35,9 +35,9 @@ SIM_TOE_OFFSET_LOCAL = [
 # Joint pose arrays produced by PyBullet follow the robot q-order:
 #   FL, FR, RL, RR
 # File/export order must match LeggedLab Go2 AMP:
-#   FR, FL, RR, RL
+#   FL, RL, FR, RR
 SIM_LEG_ORDER = ("FL", "FR", "RL", "RR")
-OUTPUT_LEG_ORDER = ("FR", "FL", "RR", "RL")
+OUTPUT_LEG_ORDER = ("FL", "RL", "FR", "RR")
 
 DEFAULT_JOINT_POSE = np.array([
     0.0, 0.8, -1.5,

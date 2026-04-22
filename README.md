@@ -29,6 +29,8 @@
   - 生成后的 A1 `61dof` 动作
 - `motion_imitation/data/motions_go2/`
   - 生成后的 Go2 `19dof` 动作
+- `motion_imitation/data/motions_go2_amp49/`
+  - 从 `go2_flip_TO` 引入的 Go2 高难动作 `49dof` AMP 源文件
 - `motion_imitation/data/motions_go2_61dof/`
   - 生成后的 Go2 `61dof` 动作
 
@@ -74,6 +76,20 @@ source /home/shibo/anaconda3/etc/profile.d/conda.sh && conda activate unitree-rl
 
 总长度为 `61`。
 
+### 3.3 外部 Go2 agile AMP 49dof
+
+从 `go2_flip_TO` 引入的外部 Go2 高难动作，每一帧格式是：
+
+- `pose(19)`
+- 足端局部位置 `toe_local_pos(12)`
+- 根线速度 `root_lin_vel(3)`
+- 根角速度 `root_ang_vel(3)`
+- 关节速度 `joint_vel(12)`
+
+总长度为 `49`。
+
+它和当前仓库 `61dof` 的差别只有最后的 `toe_local_vel(12)`。当前仓库会在导入时用相邻帧差分自动补出来。
+
 ## 4. 当前动作库
 
 当前 `a1` 和 `go2` 使用的是同一套动作名：
@@ -94,6 +110,12 @@ source /home/shibo/anaconda3/etc/profile.d/conda.sh && conda activate unitree-rl
 - `dog_pace`、`dog_trot` 是原始关键点重定向得到
 - `dog_backwards_pace`、`dog_backwards_trot` 是派生动作
 - 其余几个动作走的是从已有动作文件适配到目标机器人的流程
+
+额外支持的 Go2 高难 agile 动作：
+
+- `quad_backflip`
+- `quad_sideflip`
+- `quad_jump_forward_1m`
 
 ## 5. 常用脚本
 
@@ -218,6 +240,54 @@ python retarget_motion/convert_19dof_to_61dof.py \
   --motion_weight 1.0
 ```
 
+### 5.4 将外部 Go2 agile 49dof 转成 61dof
+
+脚本：
+
+- `retarget_motion/convert_amp_49dof_to_61dof.py`
+
+作用：
+
+- 将外部 `49dof` AMP 动作转换成当前仓库使用的 `61dof`
+- 当前用于 `go2_flip_TO` 导出的 Go2 高难动作
+
+例如只转换一个后空翻动作：
+
+```bash
+python retarget_motion/convert_amp_49dof_to_61dof.py \
+  --input_dir motion_imitation/data/motions_go2_amp49 \
+  --output_dir motion_imitation/data/motions_go2_61dof \
+  --robot go2 \
+  --motion quad_backflip
+```
+
+### 5.5 直接导入 Go2 agile 动作库
+
+脚本：
+
+- `retarget_motion/import_go2_agile_motions.py`
+
+作用：
+
+- 直接把已经放进仓库的 Go2 高难 `49dof` AMP 动作导入到 `motions_go2_61dof`
+- 同时更新 `provenance.json`
+
+导入全部当前 agile 动作：
+
+```bash
+python retarget_motion/import_go2_agile_motions.py \
+  --output_dir motion_imitation/data/motions_go2_61dof
+```
+
+只导入后空翻和侧空翻：
+
+```bash
+python retarget_motion/import_go2_agile_motions.py \
+  --output_dir motion_imitation/data/motions_go2_61dof \
+  --motion quad_backflip \
+  --motion quad_sideflip
+```
+
 ## 6. 推荐使用流程
 
 ### 6.1 A1 原始动作到 61dof 的完整流程
@@ -264,6 +334,17 @@ python retarget_motion/convert_19dof_to_61dof.py \
   --motion sidesteps \
   --motion turn \
   --motion_weight 1.0
+```
+
+### 6.3 Go2 高难 agile 动作导入到 61dof 的流程
+
+```bash
+source /home/shibo/anaconda3/etc/profile.d/conda.sh && conda activate unitree-rl
+python retarget_motion/import_go2_agile_motions.py \
+  --output_dir motion_imitation/data/motions_go2_61dof \
+  --motion quad_backflip \
+  --motion quad_sideflip \
+  --motion quad_jump_forward_1m
 ```
 
 ## 7. PyBullet 可视化

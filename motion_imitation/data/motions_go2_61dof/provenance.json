@@ -1,0 +1,32 @@
+{
+  "quad_backflip": {
+    "metadata_motion_path": "/data-ssd/zhang/LeggedRobot/motion_imitation/motion_imitation/data/motions_go2_amp49/quad_backflip.meta.json",
+    "mode": "external_amp49",
+    "output_path": "motion_imitation/data/motions_go2_61dof/quad_backflip.txt",
+    "source_motion_path": "/data-ssd/zhang/LeggedRobot/motion_imitation/motion_imitation/data/motions_go2_amp49/quad_backflip.txt"
+  },
+  "quad_jump_forward_1m": {
+    "metadata_motion_path": "/data-ssd/zhang/LeggedRobot/motion_imitation/motion_imitation/data/motions_go2_amp49/quad_jump_forward_1m.meta.json",
+    "mode": "external_amp49",
+    "output_path": "motion_imitation/data/motions_go2_61dof/quad_jump_forward_1m.txt",
+    "source_motion_path": "/data-ssd/zhang/LeggedRobot/motion_imitation/motion_imitation/data/motions_go2_amp49/quad_jump_forward_1m.txt"
+  },
+  "quad_sideflip": {
+    "metadata_motion_path": "/data-ssd/zhang/LeggedRobot/motion_imitation/motion_imitation/data/motions_go2_amp49/quad_sideflip.meta.json",
+    "mode": "external_amp49",
+    "output_path": "motion_imitation/data/motions_go2_61dof/quad_sideflip.txt",
+    "source_motion_path": "/data-ssd/zhang/LeggedRobot/motion_imitation/motion_imitation/data/motions_go2_amp49/quad_sideflip.txt"
+  },
+  "spin_inplace": {
+    "metadata_motion_path": "/data-ssd/zhang/LeggedRobot/motion_imitation/motion_imitation/data/motions_go2_amp49/spin_inplace.meta.json",
+    "mode": "external_amp49",
+    "output_path": "motion_imitation/data/motions_go2_61dof/spin_inplace.txt",
+    "source_motion_path": "/data-ssd/zhang/LeggedRobot/motion_imitation/motion_imitation/data/motions_go2_amp49/spin_inplace.txt"
+  },
+  "spin_inplace_ccw": {
+    "metadata_motion_path": "/data-ssd/zhang/LeggedRobot/motion_imitation/motion_imitation/data/motions_go2_amp49/spin_inplace_ccw.meta.json",
+    "mode": "external_amp49",
+    "output_path": "motion_imitation/data/motions_go2_61dof/spin_inplace_ccw.txt",
+    "source_motion_path": "/data-ssd/zhang/LeggedRobot/motion_imitation/motion_imitation/data/motions_go2_amp49/spin_inplace_ccw.txt"
+  }
+}
